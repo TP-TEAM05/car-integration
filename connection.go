@@ -6,12 +6,10 @@ import (
 	"net"
 	"sync"
 	"time"
-
-	api "github.com/ReCoFIIT/traffic-dt-integration-module-api"
 )
 
 type IConnection interface {
-	WriteDatagram(datagram api.IDatagram, safe bool)
+	WriteDatagram(datagram IDatagram, safe bool)
 	ProcessDatagram(data []byte, safe bool)
 	OnDead(safe bool) // Called when the KeepAliveTimeout is reached before deletion of this connection.
 	GetKeepAliveTimeout(safe bool) float32
@@ -34,13 +32,13 @@ type Connection struct {
 	KeepAliveTimer    *time.Timer
 }
 
-func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
+func (connection *Connection) WriteDatagram(datagram IDatagram, safe bool) {
 	if safe {
 		connection.Lock()
 		defer connection.Unlock()
 	}
 
-	datagram.SetTimestamp(time.Now().UTC().Format(api.TimestampFormat))
+	datagram.SetTimestamp(time.Now().UTC().Format(TimestampFormat))
 	datagram.SetIndex(connection.NextSendIndex)
 	connection.NextSendIndex++
 
@@ -102,7 +100,7 @@ type ProcessorConnection struct {
 
 func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	// Parse data to JSON
-	var datagram api.BaseDatagram
+	var datagram BaseDatagram
 	err := json.Unmarshal(data, &datagram)
 	if err != nil {
 		fmt.Print("Parsing JSON failed.")
@@ -115,97 +113,97 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 
 	switch datagram.Type {
 	case "connect":
-		var connectDatagram api.ConnectDatagram
+		var connectDatagram ConnectDatagram
 		_ = json.Unmarshal(data, &connectDatagram)
-		response := &api.AcknowledgeDatagram{
-			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
+		response := &AcknowledgeDatagram{
+			BaseDatagram:       BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: connectDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
 
 	case "subscribe":
-		var subscribeDatagram api.SubscribeDatagram
+		var subscribeDatagram SubscribeDatagram
 		_ = json.Unmarshal(data, &subscribeDatagram)
 
 		// Create subscription
 		connection.Subscribe(&subscribeDatagram, safe)
 
 		// Send acknowledgement
-		response := &api.AcknowledgeDatagram{
-			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
+		response := &AcknowledgeDatagram{
+			BaseDatagram:       BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: subscribeDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
 
 	case "unsubscribe":
-		var unsubscribeDatagram api.UnsubscribeDatagram
+		var unsubscribeDatagram UnsubscribeDatagram
 		_ = json.Unmarshal(data, &unsubscribeDatagram)
 
 		// Delete subscription
 		connection.Unsubscribe(unsubscribeDatagram.Content, safe)
 
 		// Send acknowledgement
-		response := &api.AcknowledgeDatagram{
-			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
+		response := &AcknowledgeDatagram{
+			BaseDatagram:       BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: unsubscribeDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
 
 	case "keepalive":
-		var keepAliveDatagram api.KeepAliveDatagram
+		var keepAliveDatagram KeepAliveDatagram
 		_ = json.Unmarshal(data, &keepAliveDatagram)
-		response := &api.AcknowledgeDatagram{
-			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
+		response := &AcknowledgeDatagram{
+			BaseDatagram:       BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: keepAliveDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
 
 	case "ping":
-		var pingDatagram api.KeepAliveDatagram
+		var pingDatagram KeepAliveDatagram
 		_ = json.Unmarshal(data, &pingDatagram)
-		response := &api.AcknowledgeDatagram{
-			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
+		response := &AcknowledgeDatagram{
+			BaseDatagram:       BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: pingDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
 
 	case "request_area":
-		var requestAreaDatagram api.RequestAreaDatagram
+		var requestAreaDatagram RequestAreaDatagram
 		_ = json.Unmarshal(data, &requestAreaDatagram)
 
-		response := &api.AreaDatagram{
-			BaseDatagram: api.BaseDatagram{Type: "area"},
+		response := &AreaDatagram{
+			BaseDatagram: BaseDatagram{Type: "area"},
 			TopLeft:      connection.DataModel.Area.TopLeft,
 			BottomRight:  connection.DataModel.Area.BottomRight,
 		}
 		connection.WriteDatagram(response, safe)
 
 	case "notify":
-		var notifyDatagram api.NotifyDatagram
+		var notifyDatagram NotifyDatagram
 		_ = json.Unmarshal(data, &notifyDatagram)
-		response := &api.AcknowledgeDatagram{
-			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
+		response := &AcknowledgeDatagram{
+			BaseDatagram:       BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: notifyDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
 
-		var specificNotifyDatagram api.INotifyDatagram
+		var specificNotifyDatagram INotifyDatagram
 
 		switch notifyDatagram.ContentType {
 		case "generic":
-			var genericDatagram api.GenericNotifyDatagram
+			var genericDatagram GenericNotifyDatagram
 			_ = json.Unmarshal(data, &genericDatagram)
 			specificNotifyDatagram = &genericDatagram
 		case "head_collision":
-			var headCollisionDatagram api.HeadCollisionNotifyDatagram
+			var headCollisionDatagram HeadCollisionNotifyDatagram
 			_ = json.Unmarshal(data, &headCollisionDatagram)
 			specificNotifyDatagram = &headCollisionDatagram
 		case "chain_collision":
-			var chainCollisionDatagram api.ChainCollisionNotifyDatagram
+			var chainCollisionDatagram ChainCollisionNotifyDatagram
 			_ = json.Unmarshal(data, &chainCollisionDatagram)
 			specificNotifyDatagram = &chainCollisionDatagram
 		case "crossroad":
-			var crossroadDatagram api.CrossroadNotifyDatagram
+			var crossroadDatagram CrossroadNotifyDatagram
 			_ = json.Unmarshal(data, &crossroadDatagram)
 			specificNotifyDatagram = &crossroadDatagram
 		}
@@ -216,32 +214,32 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 		// Send notification to target vehicle
 		vehicleConnection := connection.DataModel.GetVehicleConnection(notifyDatagram.VehicleId, true)
 		if vehicleConnection != nil {
-			var specificNotifyVehicleDatagram api.IDatagram
-			notifyVehicleDatagram := &api.NotifyVehicleDatagram{
-				BaseDatagram: api.BaseDatagram{Type: "notify_vehicle"},
+			var specificNotifyVehicleDatagram IDatagram
+			notifyVehicleDatagram := &NotifyVehicleDatagram{
+				BaseDatagram: BaseDatagram{Type: "notify_vehicle"},
 				Level:        notifyDatagram.Level,
 				ContentType:  notifyDatagram.ContentType,
 			}
 			switch notifyDatagram.ContentType {
 			case "generic":
-				specificNotifyVehicleDatagram = &api.GenericNotifyVehicleDatagram{
+				specificNotifyVehicleDatagram = &GenericNotifyVehicleDatagram{
 					NotifyVehicleDatagram: *notifyVehicleDatagram,
-					Content:               specificNotifyDatagram.GetContent().(api.GenericNotificationContent),
+					Content:               specificNotifyDatagram.GetContent().(GenericNotificationContent),
 				}
 			case "head_collision":
-				specificNotifyVehicleDatagram = &api.HeadCollisionNotifyVehicleDatagram{
+				specificNotifyVehicleDatagram = &HeadCollisionNotifyVehicleDatagram{
 					NotifyVehicleDatagram: *notifyVehicleDatagram,
-					Content:               specificNotifyDatagram.GetContent().(api.HeadCollisionNotificationContent),
+					Content:               specificNotifyDatagram.GetContent().(HeadCollisionNotificationContent),
 				}
 			case "chain_collision":
-				specificNotifyVehicleDatagram = &api.ChainCollisionNotifyVehicleDatagram{
+				specificNotifyVehicleDatagram = &ChainCollisionNotifyVehicleDatagram{
 					NotifyVehicleDatagram: *notifyVehicleDatagram,
-					Content:               specificNotifyDatagram.GetContent().(api.ChainCollisionNotificationContent),
+					Content:               specificNotifyDatagram.GetContent().(ChainCollisionNotificationContent),
 				}
 			case "crossroad":
-				specificNotifyVehicleDatagram = &api.CrossroadNotifyVehicleDatagram{
+				specificNotifyVehicleDatagram = &CrossroadNotifyVehicleDatagram{
 					NotifyVehicleDatagram: *notifyVehicleDatagram,
-					Content:               specificNotifyDatagram.GetContent().(api.CrossroadNotificationContent),
+					Content:               specificNotifyDatagram.GetContent().(CrossroadNotificationContent),
 				}
 			}
 
@@ -258,7 +256,7 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	}
 }
 
-func (connection *ProcessorConnection) Subscribe(datagram *api.SubscribeDatagram, safe bool) {
+func (connection *ProcessorConnection) Subscribe(datagram *SubscribeDatagram, safe bool) {
 	if safe {
 		connection.Lock()
 		defer connection.Unlock()
@@ -315,7 +313,7 @@ type VehicleConnection struct {
 func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 
 	// Parse data to JSON
-	var datagram api.BaseDatagram
+	var datagram BaseDatagram
 	err := json.Unmarshal(data, &datagram)
 	if err != nil {
 		fmt.Print("Parsing JSON failed: ", err)
@@ -328,16 +326,16 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 
 	switch datagram.Type {
 	case "ping":
-		var pingDatagram api.KeepAliveDatagram
+		var pingDatagram KeepAliveDatagram
 		_ = json.Unmarshal(data, &pingDatagram)
-		response := &api.AcknowledgeDatagram{
-			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
+		response := &AcknowledgeDatagram{
+			BaseDatagram:       BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: pingDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
 
 	case "update_vehicle":
-		var updateVehicleDatagram api.UpdateVehicleDatagram
+		var updateVehicleDatagram UpdateVehicleDatagram
 		_ = json.Unmarshal(data, &updateVehicleDatagram)
 
 		// Update vehicle data in connection
@@ -358,8 +356,8 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		} else {
 			// Disconnect vehicle which is outside the managed area
 			connection.DataModel.DeleteVehicle(updateVehicleDatagram.Vehicle.Vin, true)
-			response := &api.DisconnectVehicleDatagram{
-				BaseDatagram: api.BaseDatagram{Type: "disconnect_vehicle"},
+			response := &DisconnectVehicleDatagram{
+				BaseDatagram: BaseDatagram{Type: "disconnect_vehicle"},
 				ConnectTo:    "NOT IMPLEMENTED", // Should contain connection string to the following Integration Module, out of scope for now
 
 			}

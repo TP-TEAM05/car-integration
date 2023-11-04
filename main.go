@@ -4,19 +4,18 @@ import (
 	"log"
 	"net/http"
 
-	api "github.com/ReCoFIIT/traffic-dt-integration-module-api"
 	"github.com/rs/zerolog"
 )
 
 func main() {
-	zerolog.TimeFieldFormat = api.TimestampFormat
+	zerolog.TimeFieldFormat = TimestampFormat
 
 	area := Area{
-		TopLeft: api.PositionJSON{
+		TopLeft: PositionJSON{
 			Lat: 0,
 			Lon: 0,
 		},
-		BottomRight: api.PositionJSON{
+		BottomRight: PositionJSON{
 			Lat: 0,
 			Lon: 0,
 		},

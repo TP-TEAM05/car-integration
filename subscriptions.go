@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"time"
-
-	api "github.com/ReCoFIIT/traffic-dt-integration-module-api"
 )
 
 type Subscription struct {
@@ -17,17 +15,17 @@ type Subscription struct {
 func (subscription *Subscription) Start() error {
 	for {
 		// Send update
-		var datagram api.IDatagram
+		var datagram IDatagram
 		switch subscription.Content {
 		case "vehicles":
-			datagram = &api.UpdateVehiclesDatagram{
-				BaseDatagram: api.BaseDatagram{Type: "update_vehicles"},
+			datagram = &UpdateVehiclesDatagram{
+				BaseDatagram: BaseDatagram{Type: "update_vehicles"},
 				Vehicles:     subscription.Connection.DataModel.GetVehicles(true),
 			}
 
 		case "notifications":
-			datagram = &api.UpdateNotificationsDatagram{
-				BaseDatagram:  api.BaseDatagram{Type: "update_notifications"},
+			datagram = &UpdateNotificationsDatagram{
+				BaseDatagram:  BaseDatagram{Type: "update_notifications"},
 				Notifications: subscription.Connection.DataModel.GetNotifications(true),
 			}
 		default:

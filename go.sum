@@ -1,5 +1,3 @@
-github.com/ReCoFIIT/traffic-dt-integration-module-api v0.0.0-20231031060150-2b69136b4afe h1:gFiqm8UKabuRSJz0w8iw3XOnNhI8BV/IPYTcnju1ptg=
-github.com/ReCoFIIT/traffic-dt-integration-module-api v0.0.0-20231031060150-2b69136b4afe/go.mod h1:RSuD8TdsH4kFZ3vgeJGWAZBaXbeP9l9hVNvE/L0sW3s=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=

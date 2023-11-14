@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	database "decision-module/services"
+
 	"github.com/rs/zerolog"
 )
 
@@ -23,13 +25,15 @@ func main() {
 
 	var dataModel = NewDataModel(&area, 0)
 
+	database.Init()
+
 	go NewConnectionsManager(dataModel, "processor", 0, nil).
-		StartListening(8080, true)
+		StartListening(6060, true)
 
 	// We don't want the main() to exit
 	go NewConnectionsManager(dataModel, "vehicle", 0, nil).
-		StartListening(80, true)
+		StartListening(60, true)
 
 	// Debug for pprof
-	log.Println(http.ListenAndServe("localhost:6060", nil))
+	log.Println(http.ListenAndServe("localhost:5050", nil))
 }

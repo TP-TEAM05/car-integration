@@ -25,16 +25,19 @@ type DataModel struct {
 	Notifications          map[int]map[string]*Notification
 	NotificationDuration   float32
 	NextNotificationId     int
+	updateCond             *sync.Cond
 }
 
 func NewDataModel(area *Area, notificationDuration float32) *DataModel {
-	return &DataModel{
+	dm := &DataModel{
 		Area:                   area,
 		Vehicles:               make(map[string]*Vehicle),
 		Notifications:          make(map[int]map[string]*Notification),
 		VehicleConnectionsById: make(map[int]*VehicleConnection),
 		NotificationDuration:   notificationDuration,
 	}
+	dm.updateCond = sync.NewCond(&dm.Mutex)
+	return dm
 }
 
 func (dataModel *DataModel) AddNotification(datagram INotifyDatagram, safe bool) {
@@ -174,6 +177,7 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 	savedVehicle.LaneId = vehicle.LaneId
 
 	dataModel.VehicleConnectionsById[savedVehicle.Id] = connection
+	dataModel.updateCond.Broadcast()
 }
 
 // DeleteVehicle removes the vehicle identified by the vin number from the DataModel.

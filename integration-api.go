@@ -59,6 +59,7 @@ type ConnectDatagram struct {
 type SubscribeDatagram struct {
 	BaseDatagram
 	Content  string  `json:"content"`
+	Topic    string  `json:"topic"`
 	Interval float32 `json:"interval"`
 	Road     string  `json:"road"`
 }
@@ -166,6 +167,11 @@ type CrossroadNotifyVehicleDatagram struct {
 type UpdateVehiclesDatagram struct {
 	BaseDatagram
 	Vehicles []UpdateVehiclesVehicle `json:"vehicles"`
+}
+
+type UpdatePositionVehicleDatagram struct {
+	BaseDatagram
+	Vehicle UpdateVehiclesVehicle `json:"vehicle"`
 }
 
 type ConnectVehicleDatagram struct {

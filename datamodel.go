@@ -25,7 +25,9 @@ type DataModel struct {
 	Notifications          map[int]map[string]*Notification
 	NotificationDuration   float32
 	NextNotificationId     int
-	updateCond             *sync.Cond
+
+	updateCond        *sync.Cond
+	UpdatedVehicleVin string
 }
 
 func NewDataModel(area *Area, notificationDuration float32) *DataModel {
@@ -177,6 +179,7 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 	savedVehicle.LaneId = vehicle.LaneId
 
 	dataModel.VehicleConnectionsById[savedVehicle.Id] = connection
+	dataModel.UpdatedVehicleVin = vehicle.Vin
 	dataModel.updateCond.Broadcast()
 }
 
@@ -211,6 +214,27 @@ func (dataModel *DataModel) GetVehicles(safe bool) []UpdateVehiclesVehicle {
 		i++
 	}
 	return vehicles
+}
+
+func (dataModel *DataModel) GetVehicleById(id string) UpdateVehiclesVehicle {
+	// Look up the vehicle by ID directly
+	vehicle, ok := dataModel.Vehicles[id]
+	if !ok {
+		// Vehicle not found
+
+	}
+
+	// Vehicle found, return the corresponding UpdateVehiclesVehicle
+	return UpdateVehiclesVehicle{
+		Id:           vehicle.Id,
+		Timestamp:    vehicle.Timestamp,
+		Type:         vehicle.Type,
+		Speed:        vehicle.Speed,
+		Acceleration: vehicle.Acceleration,
+		Heading:      vehicle.Heading,
+		Position:     vehicle.Position,
+		LaneId:       vehicle.LaneId,
+	}
 }
 
 func (dataModel *DataModel) GetVehicleConnection(vehicleId int, safe bool) *VehicleConnection {

@@ -9,18 +9,18 @@ import (
 type Subscription struct {
 	Connection *ProcessorConnection
 	Content    string
+	Topic      string
 	Interval   float32
 	StopSignal chan bool
 }
 
 func (subscription *Subscription) Start() error {
 	var err error
-	if subscription.Content == "vehicles" || subscription.Content == "notifications" {
+	if subscription.Content == "periodic-updates" {
 		err = subscription.SendIntervalUpdates()
 	} else if subscription.Content == "live-updates" {
 		err = subscription.SendLiveUpdates()
 	} else {
-		// Create a custom error message
 		err = errors.New("invalid content parameter: " + subscription.Content)
 	}
 
@@ -36,7 +36,13 @@ func (subscription *Subscription) SendLiveUpdates() error {
 		subscription.Connection.DataModel.Lock()
 
 		subscription.Connection.DataModel.updateCond.Wait()
-		fmt.Println("helloooo world")
+
+		var datagram = &UpdatePositionVehicleDatagram{
+			BaseDatagram: BaseDatagram{Type: "update_vehicle_position"},
+			Vehicle:      subscription.Connection.DataModel.GetVehicleById(subscription.Connection.DataModel.UpdatedVehicleVin),
+		}
+
+		subscription.Connection.WriteDatagram(datagram, true)
 		subscription.Connection.DataModel.Unlock()
 
 	}
@@ -46,7 +52,7 @@ func (subscription *Subscription) SendIntervalUpdates() error {
 	for {
 		// Send update
 		var datagram IDatagram
-		switch subscription.Content {
+		switch subscription.Topic {
 		case "vehicles":
 			datagram = &UpdateVehiclesDatagram{
 				BaseDatagram: BaseDatagram{Type: "update_vehicles"},
@@ -58,7 +64,6 @@ func (subscription *Subscription) SendIntervalUpdates() error {
 				BaseDatagram:  BaseDatagram{Type: "update_notifications"},
 				Notifications: subscription.Connection.DataModel.GetNotifications(true),
 			}
-		// SEM POJDE DALSIA SUBSCRIPTION, NA CAKANIE ZMIEN, for cyklus pojde az dovnutra ako funkcia
 		default:
 			return fmt.Errorf("unsupported content of subscription: %v", subscription.Content)
 		}

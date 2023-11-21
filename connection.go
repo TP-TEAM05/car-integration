@@ -265,6 +265,7 @@ func (connection *ProcessorConnection) Subscribe(datagram *SubscribeDatagram, sa
 	subscription := &Subscription{
 		connection,
 		datagram.Content,
+		datagram.Topic,
 		datagram.Interval,
 		make(chan bool),
 	}

@@ -27,13 +27,18 @@ func main() {
 
 	database.Init()
 
+	// decision module
 	go NewConnectionsManager(dataModel, "processor", 0, nil).
 		StartListening(6060, true)
 
-	// We don't want the main() to exit
+	// backend
+	go NewConnectionsManager(dataModel, "processor", 0, nil).
+		StartListening(5050, true)
+
+	// car simulator
 	go NewConnectionsManager(dataModel, "vehicle", 0, nil).
-		StartListening(60, true)
+		StartListening(4040, true)
 
 	// Debug for pprof
-	log.Println(http.ListenAndServe("localhost:5050", nil))
+	log.Println(http.ListenAndServe("localhost:3030", nil))
 }

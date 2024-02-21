@@ -348,11 +348,11 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 			connection.Unlock()
 		}
 
-		connection.DataModel.Lock()
-		insideArea := connection.DataModel.Area.Contains(&updateVehicleDatagram.Vehicle.Position)
-		connection.DataModel.Unlock()
+		// connection.DataModel.Lock()
+		// insideArea := connection.DataModel.Area.Contains(&updateVehicleDatagram.Vehicle.Position)
+		// connection.DataModel.Unlock()
 
-		if insideArea {
+		if true {
 			connection.DataModel.UpdateVehicle(connection, &updateVehicleDatagram, true)
 		} else {
 			// Disconnect vehicle which is outside the managed area

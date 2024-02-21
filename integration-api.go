@@ -192,7 +192,6 @@ type UpdateVehicleDatagram struct {
 type UpdateVehiclesVehicle struct {
 	Timestamp          string  `json:"timestamp"`
 	Id                 int     `json:"id"`
-	Type               string  `json:"type"`
 	Longitude          float32 `json:"Longitude"`
 	Latitude           float32 `json:"Latitude"`
 	DistanceUltrasonic float32 `json:"DistanceUltrasonic"`

@@ -146,9 +146,8 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 	savedVehicle, ok := dataModel.Vehicles[vehicle.Vin]
 	if !ok {
 		savedVehicle = &Vehicle{
-			Id:   dataModel.NextVehicleId,
-			Vin:  vehicle.Vin,
-			Type: GetVehicleType(vehicle.Vin),
+			Id:  dataModel.NextVehicleId,
+			Vin: vehicle.Vin,
 		}
 		dataModel.NextVehicleId++
 		dataModel.Vehicles[vehicle.Vin] = savedVehicle
@@ -172,11 +171,14 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 	}
 
 	savedVehicle.Timestamp = datagram.Timestamp
-	savedVehicle.Speed = vehicle.Speed
-	savedVehicle.Acceleration = vehicle.Acceleration
-	savedVehicle.Heading = vehicle.Heading
-	savedVehicle.Position = vehicle.Position
-	savedVehicle.LaneId = vehicle.LaneId
+	savedVehicle.Longitude = vehicle.Longitude
+	savedVehicle.Latitude = vehicle.Latitude
+	savedVehicle.DistanceUltrasonic = vehicle.DistanceUltrasonic
+	savedVehicle.DistanceLidar = vehicle.DistanceLidar
+	savedVehicle.SpeedFrontLeft = vehicle.SpeedFrontLeft
+	savedVehicle.SpeedFrontRight = vehicle.SpeedFrontRight
+	savedVehicle.SpeedRearRight = vehicle.SpeedRearRight
+	savedVehicle.SpeedRearLeft = vehicle.SpeedRearLeft
 
 	dataModel.VehicleConnectionsById[savedVehicle.Id] = connection
 	dataModel.UpdatedVehicleVin = vehicle.Vin
@@ -202,14 +204,16 @@ func (dataModel *DataModel) GetVehicles(safe bool) []UpdateVehiclesVehicle {
 	i := 0
 	for _, vehicle := range dataModel.Vehicles {
 		vehicles[i] = UpdateVehiclesVehicle{
-			Id:           vehicle.Id,
-			Timestamp:    vehicle.Timestamp,
-			Type:         vehicle.Type,
-			Speed:        vehicle.Speed,
-			Acceleration: vehicle.Acceleration,
-			Heading:      vehicle.Heading,
-			Position:     vehicle.Position,
-			LaneId:       vehicle.LaneId,
+			Timestamp:          vehicle.Timestamp,
+			Id:                 vehicle.Id,
+			Longitude:          vehicle.Longitude,
+			Latitude:           vehicle.Latitude,
+			DistanceUltrasonic: vehicle.DistanceUltrasonic,
+			DistanceLidar:      vehicle.DistanceLidar,
+			SpeedFrontLeft:     vehicle.SpeedFrontLeft,
+			SpeedFrontRight:    vehicle.SpeedFrontRight,
+			SpeedRearRight:     vehicle.SpeedRearRight,
+			SpeedRearLeft:      vehicle.SpeedRearLeft,
 		}
 		i++
 	}
@@ -226,14 +230,16 @@ func (dataModel *DataModel) GetVehicleById(id string) UpdateVehiclesVehicle {
 
 	// Vehicle found, return the corresponding UpdateVehiclesVehicle
 	return UpdateVehiclesVehicle{
-		Id:           vehicle.Id,
-		Timestamp:    vehicle.Timestamp,
-		Type:         vehicle.Type,
-		Speed:        vehicle.Speed,
-		Acceleration: vehicle.Acceleration,
-		Heading:      vehicle.Heading,
-		Position:     vehicle.Position,
-		LaneId:       vehicle.LaneId,
+		Timestamp:          vehicle.Timestamp,
+		Id:                 vehicle.Id,
+		Longitude:          vehicle.Longitude,
+		Latitude:           vehicle.Latitude,
+		DistanceUltrasonic: vehicle.DistanceUltrasonic,
+		DistanceLidar:      vehicle.DistanceLidar,
+		SpeedFrontLeft:     vehicle.SpeedFrontLeft,
+		SpeedFrontRight:    vehicle.SpeedFrontRight,
+		SpeedRearRight:     vehicle.SpeedRearRight,
+		SpeedRearLeft:      vehicle.SpeedRearLeft,
 	}
 }
 
@@ -249,21 +255,18 @@ func (dataModel *DataModel) GetVehicleConnection(vehicleId int, safe bool) *Vehi
 	return nil
 }
 
-// GetVehicleType Currently we support only cars and don't parse vin number.
-func GetVehicleType(vin string) string {
-	return "car"
-}
-
 type Vehicle struct {
-	Timestamp    string
-	Id           int
-	Vin          string
-	Type         string
-	Speed        float32
-	Acceleration float32
-	Heading      float32
-	Position     PositionJSON
-	LaneId       string
+	Timestamp          string
+	Id                 int
+	Vin                string
+	Longitude          float32
+	Latitude           float32
+	DistanceUltrasonic float32
+	DistanceLidar      float32
+	SpeedFrontLeft     float32
+	SpeedFrontRight    float32
+	SpeedRearLeft      float32
+	SpeedRearRight     float32
 }
 
 type Notification struct {

@@ -171,7 +171,7 @@ type UpdateVehiclesDatagram struct {
 
 type UpdatePositionVehicleDatagram struct {
 	BaseDatagram
-	Vehicle UpdateVehiclesVehicle `json:"vehicle"`
+	Vehicle UpdateVehicleVehicle `json:"vehicle"`
 }
 
 type ConnectVehicleDatagram struct {

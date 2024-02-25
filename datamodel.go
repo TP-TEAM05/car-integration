@@ -220,7 +220,7 @@ func (dataModel *DataModel) GetVehicles(safe bool) []UpdateVehiclesVehicle {
 	return vehicles
 }
 
-func (dataModel *DataModel) GetVehicleById(id string) UpdateVehiclesVehicle {
+func (dataModel *DataModel) GetVehicleById(id string) UpdateVehicleVehicle {
 	// Look up the vehicle by ID directly
 	vehicle, ok := dataModel.Vehicles[id]
 	if !ok {
@@ -229,9 +229,8 @@ func (dataModel *DataModel) GetVehicleById(id string) UpdateVehiclesVehicle {
 	}
 
 	// Vehicle found, return the corresponding UpdateVehiclesVehicle
-	return UpdateVehiclesVehicle{
-		Timestamp:          vehicle.Timestamp,
-		Id:                 vehicle.Id,
+	return UpdateVehicleVehicle{
+		Vin:                vehicle.Vin,
 		Longitude:          vehicle.Longitude,
 		Latitude:           vehicle.Latitude,
 		DistanceUltrasonic: vehicle.DistanceUltrasonic,

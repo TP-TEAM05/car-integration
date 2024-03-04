@@ -4,39 +4,45 @@ import (
 	"log"
 	"net/http"
 
-	database "car-integration/services"
+	models "car-integration/models"
+	communication "car-integration/services/communication"
+	database "car-integration/services/database"
 
 	"github.com/rs/zerolog"
 )
 
 func main() {
-	zerolog.TimeFieldFormat = TimestampFormat
+	zerolog.TimeFieldFormat = models.TimestampFormat
 
-	area := Area{
-		TopLeft: PositionJSON{
+	area := models.Area{
+		TopLeft: models.PositionJSON{
 			Lat: 0,
 			Lon: 0,
 		},
-		BottomRight: PositionJSON{
+		BottomRight: models.PositionJSON{
 			Lat: 0,
 			Lon: 0,
 		},
 	}
 
-	var dataModel = NewDataModel(&area, 0)
+	var dataModel = communication.NewDataModel(&area, 0)
 
 	database.Init()
 
 	// decision module
-	go NewConnectionsManager(dataModel, "processor", 0, nil).
+	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).
 		StartListening(6060, true)
 
+	// decision module - receiving
+	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).
+		StartListening(6061, true)
+
 	// backend
-	go NewConnectionsManager(dataModel, "processor", 0, nil).
+	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).
 		StartListening(5050, true)
 
 	// car simulator
-	go NewConnectionsManager(dataModel, "vehicle", 0, nil).
+	go communication.NewConnectionsManager(dataModel, "vehicle", 0, nil).
 		StartListening(4040, true)
 
 	// Debug for pprof

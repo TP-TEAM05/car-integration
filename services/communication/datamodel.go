@@ -1,6 +1,7 @@
-package main
+package communication
 
 import (
+	models "car-integration/models"
 	"fmt"
 	"sync"
 	"time"
@@ -9,7 +10,7 @@ import (
 // For now
 
 func ParseTime(timestamp string) time.Time {
-	t, err := time.Parse(TimestampFormat, timestamp)
+	t, err := time.Parse(models.TimestampFormat, timestamp)
 	if err != nil {
 		fmt.Printf("Failed to parse timestamp %v\n", timestamp)
 	}
@@ -18,7 +19,7 @@ func ParseTime(timestamp string) time.Time {
 
 type DataModel struct {
 	sync.Mutex
-	Area                   *Area
+	Area                   *models.Area
 	Vehicles               map[string]*Vehicle
 	NextVehicleId          int
 	VehicleConnectionsById map[int]*VehicleConnection // Maps vehicleId to its connection
@@ -30,7 +31,7 @@ type DataModel struct {
 	UpdatedVehicleVin string
 }
 
-func NewDataModel(area *Area, notificationDuration float32) *DataModel {
+func NewDataModel(area *models.Area, notificationDuration float32) *DataModel {
 	dm := &DataModel{
 		Area:                   area,
 		Vehicles:               make(map[string]*Vehicle),
@@ -42,7 +43,7 @@ func NewDataModel(area *Area, notificationDuration float32) *DataModel {
 	return dm
 }
 
-func (dataModel *DataModel) AddNotification(datagram INotifyDatagram, safe bool) {
+func (dataModel *DataModel) AddNotification(datagram models.INotifyDatagram, safe bool) {
 	if safe {
 		dataModel.Lock()
 		defer dataModel.Unlock()
@@ -61,7 +62,7 @@ func (dataModel *DataModel) AddNotification(datagram INotifyDatagram, safe bool)
 	// Prepare new notification
 	notification := &Notification{
 		Id: notificationId,
-		Datagram: &UpdateNotificationsNotification{
+		Datagram: &models.UpdateNotificationsNotification{
 			Timestamp:   notifyDiagram.Timestamp,
 			VehicleId:   notifyDiagram.VehicleId,
 			Level:       notifyDiagram.Level,
@@ -105,13 +106,13 @@ func (dataModel *DataModel) DeleteNotification(vehicleId int, contentType string
 	}
 }
 
-func (dataModel *DataModel) GetNotifications(safe bool) []UpdateNotificationsNotification {
+func (dataModel *DataModel) GetNotifications(safe bool) []models.UpdateNotificationsNotification {
 	if safe {
 		dataModel.Lock()
 		defer dataModel.Unlock()
 	}
 
-	var notifications = make([]UpdateNotificationsNotification, dataModel.GetNotificationsCount(false))
+	var notifications = make([]models.UpdateNotificationsNotification, dataModel.GetNotificationsCount(false))
 	i := 0
 	for _, vehicleNotifications := range dataModel.Notifications {
 		for _, notification := range vehicleNotifications {
@@ -135,7 +136,7 @@ func (dataModel *DataModel) GetNotificationsCount(safe bool) int {
 	return count
 }
 
-func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagram *UpdateVehicleDatagram, safe bool) {
+func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagram *models.UpdateVehicleDatagram, safe bool) {
 	if safe {
 		dataModel.Lock()
 		defer dataModel.Unlock()
@@ -152,13 +153,13 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 		dataModel.NextVehicleId++
 		dataModel.Vehicles[vehicle.Vin] = savedVehicle
 	} else {
-		newTime, err := time.Parse(TimestampFormat, datagram.Timestamp)
+		newTime, err := time.Parse(models.TimestampFormat, datagram.Timestamp)
 		if err != nil {
 			fmt.Printf("Failed to parse %v\n", datagram.Timestamp)
 			return
 		}
 
-		lastTime, err := time.Parse(TimestampFormat, savedVehicle.Timestamp)
+		lastTime, err := time.Parse(models.TimestampFormat, savedVehicle.Timestamp)
 		if err != nil {
 			fmt.Printf("Failed to parse %v\n", savedVehicle.Timestamp)
 			return
@@ -194,16 +195,16 @@ func (dataModel *DataModel) DeleteVehicle(vin string, safe bool) {
 	delete(dataModel.Vehicles, vin)
 }
 
-func (dataModel *DataModel) GetVehicles(safe bool) []UpdateVehiclesVehicle {
+func (dataModel *DataModel) GetVehicles(safe bool) []models.UpdateVehiclesVehicle {
 	if safe {
 		dataModel.Lock()
 		defer dataModel.Unlock()
 	}
 
-	var vehicles = make([]UpdateVehiclesVehicle, len(dataModel.Vehicles))
+	var vehicles = make([]models.UpdateVehiclesVehicle, len(dataModel.Vehicles))
 	i := 0
 	for _, vehicle := range dataModel.Vehicles {
-		vehicles[i] = UpdateVehiclesVehicle{
+		vehicles[i] = models.UpdateVehiclesVehicle{
 			Timestamp:          vehicle.Timestamp,
 			Id:                 vehicle.Id,
 			Longitude:          vehicle.Longitude,
@@ -220,7 +221,7 @@ func (dataModel *DataModel) GetVehicles(safe bool) []UpdateVehiclesVehicle {
 	return vehicles
 }
 
-func (dataModel *DataModel) GetVehicleById(id string) UpdateVehicleVehicle {
+func (dataModel *DataModel) GetVehicleById(id string) models.UpdateVehicleVehicle {
 	// Look up the vehicle by ID directly
 	vehicle, ok := dataModel.Vehicles[id]
 	if !ok {
@@ -229,7 +230,7 @@ func (dataModel *DataModel) GetVehicleById(id string) UpdateVehicleVehicle {
 	}
 
 	// Vehicle found, return the corresponding UpdateVehiclesVehicle
-	return UpdateVehicleVehicle{
+	return models.UpdateVehicleVehicle{
 		Vin:                vehicle.Vin,
 		Longitude:          vehicle.Longitude,
 		Latitude:           vehicle.Latitude,
@@ -270,7 +271,7 @@ type Vehicle struct {
 
 type Notification struct {
 	Id       int
-	Datagram *UpdateNotificationsNotification
+	Datagram *models.UpdateNotificationsNotification
 }
 
 // Returns true if other Notification should replace this notification in the means of importance. Note this can only
@@ -301,14 +302,14 @@ func (notification *Notification) ReplaceableBy(other *Notification) (bool, erro
 	// We can discard outdated notification with higher level if the targetVehicleIsTheSame
 	switch notification.Datagram.ContentType {
 	case "head_collision":
-		targetVehicleId := notification.Datagram.Content.(HeadCollisionNotificationContent).TargetVehicleId
-		otherTargetVehicleId := other.Datagram.Content.(HeadCollisionNotificationContent).TargetVehicleId
+		targetVehicleId := notification.Datagram.Content.(models.HeadCollisionNotificationContent).TargetVehicleId
+		otherTargetVehicleId := other.Datagram.Content.(models.HeadCollisionNotificationContent).TargetVehicleId
 		if targetVehicleId == otherTargetVehicleId {
 			return true, nil
 		}
 	case "chain_collision":
-		targetVehicleId := notification.Datagram.Content.(ChainCollisionNotificationContent).TargetVehicleId
-		otherTargetVehicleId := other.Datagram.Content.(ChainCollisionNotificationContent).TargetVehicleId
+		targetVehicleId := notification.Datagram.Content.(models.ChainCollisionNotificationContent).TargetVehicleId
+		otherTargetVehicleId := other.Datagram.Content.(models.ChainCollisionNotificationContent).TargetVehicleId
 		if targetVehicleId == otherTargetVehicleId {
 			return true, nil
 		}

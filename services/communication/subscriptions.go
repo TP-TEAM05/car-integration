@@ -1,6 +1,7 @@
-package main
+package communication
 
 import (
+	models "car-integration/models"
 	"errors"
 	"fmt"
 	"time"
@@ -37,8 +38,8 @@ func (subscription *Subscription) SendLiveUpdates() error {
 
 		subscription.Connection.DataModel.updateCond.Wait()
 
-		var datagram = &UpdatePositionVehicleDatagram{
-			BaseDatagram: BaseDatagram{Type: "update_vehicle_position"},
+		var datagram = &models.UpdatePositionVehicleDatagram{
+			BaseDatagram: models.BaseDatagram{Type: "update_vehicle_position"},
 			Vehicle:      subscription.Connection.DataModel.GetVehicleById(subscription.Connection.DataModel.UpdatedVehicleVin),
 		}
 
@@ -51,17 +52,17 @@ func (subscription *Subscription) SendLiveUpdates() error {
 func (subscription *Subscription) SendIntervalUpdates() error {
 	for {
 		// Send update
-		var datagram IDatagram
+		var datagram models.IDatagram
 		switch subscription.Topic {
 		case "vehicles":
-			datagram = &UpdateVehiclesDatagram{
-				BaseDatagram: BaseDatagram{Type: "update_vehicles"},
+			datagram = &models.UpdateVehiclesDatagram{
+				BaseDatagram: models.BaseDatagram{Type: "update_vehicles"},
 				Vehicles:     subscription.Connection.DataModel.GetVehicles(true),
 			}
 
 		case "notifications":
-			datagram = &UpdateNotificationsDatagram{
-				BaseDatagram:  BaseDatagram{Type: "update_notifications"},
+			datagram = &models.UpdateNotificationsDatagram{
+				BaseDatagram:  models.BaseDatagram{Type: "update_notifications"},
 				Notifications: subscription.Connection.DataModel.GetNotifications(true),
 			}
 		default:

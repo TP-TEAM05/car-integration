@@ -179,6 +179,13 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 		}
 		connection.WriteDatagram(response, safe)
 
+	case "decision_update":
+		var decisionUpdateDatagram models.UpdateVehicleDecisionDatagram
+		_ = json.Unmarshal(data, &decisionUpdateDatagram)
+		fmt.Printf("decision update arrived....\n")
+
+		connection.DataModel.UpdateVehicleDecision(connection, &decisionUpdateDatagram, true)
+
 	case "notify":
 		var notifyDatagram models.NotifyDatagram
 		_ = json.Unmarshal(data, &notifyDatagram)
@@ -264,7 +271,7 @@ func (connection *ProcessorConnection) Subscribe(datagram *models.SubscribeDatag
 	}
 	connection.Unsubscribe(datagram.Content, false) // Delete existing subscription if any
 	subscription := &Subscription{
-		connection,
+		&connection.Connection,
 		datagram.Content,
 		datagram.Topic,
 		datagram.Interval,
@@ -309,7 +316,31 @@ func (connection *ProcessorConnection) OnDead(safe bool) {
 
 type VehicleConnection struct {
 	Connection
-	VinNumber string
+	VinNumber    string
+	Subscription *Subscription
+}
+
+func (connection *VehicleConnection) Subscribe(safe bool) {
+	if safe {
+		connection.Lock()
+		defer connection.Unlock()
+	}
+	subscription := &Subscription{
+		&connection.Connection,
+		"decision-update",
+		connection.VinNumber,
+		1,
+		make(chan bool),
+	}
+
+	connection.Subscription = subscription
+
+	go func() {
+		err := subscription.Start()
+		if err != nil {
+			fmt.Printf("Subscription ended due to an error: %v\n", err)
+		}
+	}()
 }
 
 func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
@@ -347,6 +378,12 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		connection.VinNumber = updateVehicleDatagram.Vehicle.Vin
 		if safe {
 			connection.Unlock()
+		}
+
+		// Create subscription
+		if connection.Subscription == nil {
+			fmt.Printf("Subscribe function call..." + connection.VinNumber + "\n")
+			connection.Subscribe(safe)
 		}
 
 		// connection.DataModel.Lock()

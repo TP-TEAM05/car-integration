@@ -33,10 +33,6 @@ func main() {
 	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).
 		StartListening(6060, true)
 
-	// decision module - receiving
-	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).
-		StartListening(6061, true)
-
 	// backend
 	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).
 		StartListening(5050, true)

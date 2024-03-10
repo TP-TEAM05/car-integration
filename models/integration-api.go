@@ -214,6 +214,16 @@ type UpdateVehicleVehicle struct {
 	SpeedRearRight     float32 `json:"SpeedRearRight"`
 }
 
+type UpdateVehicleDecision struct {
+	Timestamp string `json:"timestamp"`
+	Vin       string `json:"vin"`
+}
+
+type UpdateVehicleDecisionDatagram struct {
+	BaseDatagram
+	VehicleDecision UpdateVehicleDecision `json:"updateVehicleDecision"`
+}
+
 type UpdateNotificationsDatagram struct {
 	BaseDatagram
 	Notifications []UpdateNotificationsNotification `json:"notifications"`

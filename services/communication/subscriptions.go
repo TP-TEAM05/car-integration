@@ -8,7 +8,7 @@ import (
 )
 
 type Subscription struct {
-	Connection *ProcessorConnection
+	Connection *Connection
 	Content    string
 	Topic      string
 	Interval   float32
@@ -21,6 +21,8 @@ func (subscription *Subscription) Start() error {
 		err = subscription.SendIntervalUpdates()
 	} else if subscription.Content == "live-updates" {
 		err = subscription.SendLiveUpdates()
+	} else if subscription.Content == "decision-update" {
+		err = subscription.SendDecisionUpdates()
 	} else {
 		err = errors.New("invalid content parameter: " + subscription.Content)
 	}
@@ -44,6 +46,26 @@ func (subscription *Subscription) SendLiveUpdates() error {
 		}
 
 		subscription.Connection.WriteDatagram(datagram, true)
+		subscription.Connection.DataModel.Unlock()
+
+	}
+}
+
+func (subscription *Subscription) SendDecisionUpdates() error {
+	for {
+		subscription.Connection.DataModel.Lock()
+
+		subscription.Connection.DataModel.updateCondDecision.Wait()
+
+		if subscription.Topic == subscription.Connection.DataModel.UpdatedVehicleDecisionVin {
+			var datagram = &models.UpdateVehicleDecisionDatagram{
+				BaseDatagram:    models.BaseDatagram{Type: "update_vehicle_position"},
+				VehicleDecision: subscription.Connection.DataModel.GetVehicleDecisionById(subscription.Connection.DataModel.UpdatedVehicleVin),
+			}
+
+			subscription.Connection.WriteDatagram(datagram, true)
+			fmt.Printf("Sent decision update...... to car %v\n", subscription.Connection.DataModel.UpdatedVehicleVin)
+		}
 		subscription.Connection.DataModel.Unlock()
 
 	}

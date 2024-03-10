@@ -21,25 +21,30 @@ type DataModel struct {
 	sync.Mutex
 	Area                   *models.Area
 	Vehicles               map[string]*Vehicle
+	VehicleDecisions       map[string]*VehicleDecision
 	NextVehicleId          int
 	VehicleConnectionsById map[int]*VehicleConnection // Maps vehicleId to its connection
 	Notifications          map[int]map[string]*Notification
 	NotificationDuration   float32
 	NextNotificationId     int
 
-	updateCond        *sync.Cond
-	UpdatedVehicleVin string
+	updateCond                *sync.Cond
+	updateCondDecision        *sync.Cond
+	UpdatedVehicleVin         string
+	UpdatedVehicleDecisionVin string
 }
 
 func NewDataModel(area *models.Area, notificationDuration float32) *DataModel {
 	dm := &DataModel{
 		Area:                   area,
 		Vehicles:               make(map[string]*Vehicle),
+		VehicleDecisions:       make(map[string]*VehicleDecision),
 		Notifications:          make(map[int]map[string]*Notification),
 		VehicleConnectionsById: make(map[int]*VehicleConnection),
 		NotificationDuration:   notificationDuration,
 	}
 	dm.updateCond = sync.NewCond(&dm.Mutex)
+	dm.updateCondDecision = sync.NewCond(&dm.Mutex)
 	return dm
 }
 
@@ -186,6 +191,46 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 	dataModel.updateCond.Broadcast()
 }
 
+func (dataModel *DataModel) UpdateVehicleDecision(connection *ProcessorConnection, datagram *models.UpdateVehicleDecisionDatagram, safe bool) {
+	if safe {
+		dataModel.Lock()
+		defer dataModel.Unlock()
+	}
+
+	vehicleDecision := datagram.VehicleDecision
+
+	savedVehicle, ok := dataModel.VehicleDecisions[vehicleDecision.Vin]
+	if !ok {
+		savedVehicle = &VehicleDecision{
+			Timestamp: vehicleDecision.Timestamp,
+			Vin:       vehicleDecision.Vin,
+		}
+		dataModel.VehicleDecisions[savedVehicle.Vin] = savedVehicle
+	} else {
+		newTime, err := time.Parse(models.TimestampFormat, datagram.Timestamp)
+		if err != nil {
+			fmt.Printf("Failed to parse %v\n", datagram.Timestamp)
+			return
+		}
+
+		lastTime, err := time.Parse(models.TimestampFormat, savedVehicle.Timestamp)
+		if err != nil {
+			fmt.Printf("Failed to parse %v\n", savedVehicle.Timestamp)
+			return
+		}
+
+		// We want to discard the received datagram if it was older than current data we have
+		if newTime.Before(lastTime) {
+			return
+		}
+	}
+
+	savedVehicle.Timestamp = datagram.Timestamp
+	dataModel.UpdatedVehicleDecisionVin = savedVehicle.Vin
+
+	dataModel.updateCondDecision.Broadcast()
+}
+
 // DeleteVehicle removes the vehicle identified by the vin number from the DataModel.
 func (dataModel *DataModel) DeleteVehicle(vin string, safe bool) {
 	if safe {
@@ -243,6 +288,20 @@ func (dataModel *DataModel) GetVehicleById(id string) models.UpdateVehicleVehicl
 	}
 }
 
+func (dataModel *DataModel) GetVehicleDecisionById(id string) models.UpdateVehicleDecision {
+	// Look up the vehicle by ID directly
+	vehicle, ok := dataModel.VehicleDecisions[id]
+	if !ok {
+		// Vehicle not found
+
+	}
+	// Vehicle found, return the corresponding UpdateVehiclesVehicle
+	return models.UpdateVehicleDecision{
+		Vin:       vehicle.Vin,
+		Timestamp: vehicle.Timestamp,
+	}
+}
+
 func (dataModel *DataModel) GetVehicleConnection(vehicleId int, safe bool) *VehicleConnection {
 	if safe {
 		dataModel.Lock()
@@ -267,6 +326,14 @@ type Vehicle struct {
 	SpeedFrontRight    float32
 	SpeedRearLeft      float32
 	SpeedRearRight     float32
+}
+
+type VehicleDecision struct {
+	// sync.Mutex
+	Timestamp string
+	Vin       string
+
+	// updateCond *sync.Cond
 }
 
 type Notification struct {

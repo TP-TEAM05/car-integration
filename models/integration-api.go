@@ -194,7 +194,9 @@ type UpdateVehiclesVehicle struct {
 	Id                 int     `json:"id"`
 	Longitude          float32 `json:"Longitude"`
 	Latitude           float32 `json:"Latitude"`
+	CarDirection       float32 `json:"CarDirection"`
 	DistanceUltrasonic float32 `json:"DistanceUltrasonic"`
+	RearUltrasonic     float32 `json:"RearUltrasonic"`
 	DistanceLidar      float32 `json:"DistanceLidar"`
 	SpeedFrontLeft     float32 `json:"SpeedFrontLeft"`
 	SpeedFrontRight    float32 `json:"SpeedFrontRight"`
@@ -206,7 +208,9 @@ type UpdateVehicleVehicle struct {
 	Vin                string  `json:"vin"`
 	Longitude          float32 `json:"Longitude"`
 	Latitude           float32 `json:"Latitude"`
+	CarDirection       float32 `json:"CarDirection"`
 	DistanceUltrasonic float32 `json:"DistanceUltrasonic"`
+	RearUltrasonic     float32 `json:"RearUltrasonic"`
 	DistanceLidar      float32 `json:"DistanceLidar"`
 	SpeedFrontLeft     float32 `json:"SpeedFrontLeft"`
 	SpeedFrontRight    float32 `json:"SpeedFrontRight"`

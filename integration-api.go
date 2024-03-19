@@ -238,19 +238,19 @@ type GenericNotificationContent struct {
 
 type HeadCollisionNotificationContent struct {
 	TargetVehicleId      int     `json:"targetVehicleId"`
-	TimeToCollision      float32 `json:"timeToCollision"`
-	MaxSpeedExceededBy   float32 `json:"maxSpeedExceededBy"`
-	BreakingDistanceDiff float32 `json:"breakingDistanceDiff"`
+	TimeToCollision      float32 `json:"time_to_collision"`
+	MaxSpeedExceededBy   float32 `json:"max_speed_exceeded_by"`
+	BreakingDistanceDiff float32 `json:"breaking_distance_diff"`
 }
 
 type ChainCollisionNotificationContent struct {
 	TargetVehicleId     int     `json:"targetVehicleId"`
-	CurrentDistance     float32 `json:"currentDistance"`
-	RecommendedDistance float32 `json:"recommendedDistance"`
+	CurrentDistance     float32 `json:"current_distance"`
+	RecommendedDistance float32 `json:"recommended_distance"`
 }
 
 type CrossroadNotificationContent struct {
 	Text       string `json:"text"`
 	Order      int    `json:"order"`
-	RightOfWay bool   `json:"rightOfWay"`
+	RightOfWay bool   `json:"right_of_way"`
 }

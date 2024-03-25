@@ -179,8 +179,8 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 	savedVehicle.Timestamp = datagram.Timestamp
 	savedVehicle.Longitude = vehicle.Longitude
 	savedVehicle.Latitude = vehicle.Latitude
-	savedVehicle.DistanceUltrasonic = vehicle.DistanceUltrasonic
-	savedVehicle.DistanceLidar = vehicle.DistanceLidar
+	savedVehicle.FrontUltrasonic = vehicle.FrontUltrasonic
+	savedVehicle.FrontLidar = vehicle.FrontLidar
 	savedVehicle.SpeedFrontLeft = vehicle.SpeedFrontLeft
 	savedVehicle.SpeedFrontRight = vehicle.SpeedFrontRight
 	savedVehicle.SpeedRearRight = vehicle.SpeedRearRight
@@ -250,16 +250,16 @@ func (dataModel *DataModel) GetVehicles(safe bool) []models.UpdateVehiclesVehicl
 	i := 0
 	for _, vehicle := range dataModel.Vehicles {
 		vehicles[i] = models.UpdateVehiclesVehicle{
-			Timestamp:          vehicle.Timestamp,
-			Id:                 vehicle.Id,
-			Longitude:          vehicle.Longitude,
-			Latitude:           vehicle.Latitude,
-			DistanceUltrasonic: vehicle.DistanceUltrasonic,
-			DistanceLidar:      vehicle.DistanceLidar,
-			SpeedFrontLeft:     vehicle.SpeedFrontLeft,
-			SpeedFrontRight:    vehicle.SpeedFrontRight,
-			SpeedRearRight:     vehicle.SpeedRearRight,
-			SpeedRearLeft:      vehicle.SpeedRearLeft,
+			Timestamp:       vehicle.Timestamp,
+			Id:              vehicle.Id,
+			Longitude:       vehicle.Longitude,
+			Latitude:        vehicle.Latitude,
+			FrontUltrasonic: vehicle.FrontUltrasonic,
+			FrontLidar:      vehicle.FrontLidar,
+			SpeedFrontLeft:  vehicle.SpeedFrontLeft,
+			SpeedFrontRight: vehicle.SpeedFrontRight,
+			SpeedRearRight:  vehicle.SpeedRearRight,
+			SpeedRearLeft:   vehicle.SpeedRearLeft,
 		}
 		i++
 	}
@@ -276,15 +276,15 @@ func (dataModel *DataModel) GetVehicleById(id string) models.UpdateVehicleVehicl
 
 	// Vehicle found, return the corresponding UpdateVehiclesVehicle
 	return models.UpdateVehicleVehicle{
-		Vin:                vehicle.Vin,
-		Longitude:          vehicle.Longitude,
-		Latitude:           vehicle.Latitude,
-		DistanceUltrasonic: vehicle.DistanceUltrasonic,
-		DistanceLidar:      vehicle.DistanceLidar,
-		SpeedFrontLeft:     vehicle.SpeedFrontLeft,
-		SpeedFrontRight:    vehicle.SpeedFrontRight,
-		SpeedRearRight:     vehicle.SpeedRearRight,
-		SpeedRearLeft:      vehicle.SpeedRearLeft,
+		Vin:             vehicle.Vin,
+		Longitude:       vehicle.Longitude,
+		Latitude:        vehicle.Latitude,
+		FrontUltrasonic: vehicle.FrontUltrasonic,
+		FrontLidar:      vehicle.FrontLidar,
+		SpeedFrontLeft:  vehicle.SpeedFrontLeft,
+		SpeedFrontRight: vehicle.SpeedFrontRight,
+		SpeedRearRight:  vehicle.SpeedRearRight,
+		SpeedRearLeft:   vehicle.SpeedRearLeft,
 	}
 }
 
@@ -315,17 +315,17 @@ func (dataModel *DataModel) GetVehicleConnection(vehicleId int, safe bool) *Vehi
 }
 
 type Vehicle struct {
-	Timestamp          string
-	Id                 int
-	Vin                string
-	Longitude          float32
-	Latitude           float32
-	DistanceUltrasonic float32
-	DistanceLidar      float32
-	SpeedFrontLeft     float32
-	SpeedFrontRight    float32
-	SpeedRearLeft      float32
-	SpeedRearRight     float32
+	Timestamp       string
+	Id              int
+	Vin             string
+	Longitude       float32
+	Latitude        float32
+	FrontUltrasonic float32
+	FrontLidar      float32
+	SpeedFrontLeft  float32
+	SpeedFrontRight float32
+	SpeedRearLeft   float32
+	SpeedRearRight  float32
 }
 
 type VehicleDecision struct {

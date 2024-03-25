@@ -71,7 +71,7 @@ type UnsubscribeDatagram struct {
 
 type AcknowledgeDatagram struct {
 	BaseDatagram
-	AcknowledgingIndex int `json:"acknowledgingIndex"`
+	AcknowledgingIndex int `json:"acknowledging_index"`
 }
 
 type KeepAliveDatagram struct {
@@ -88,15 +88,15 @@ type RequestAreaDatagram struct {
 
 type AreaDatagram struct {
 	BaseDatagram
-	TopLeft     PositionJSON `json:"topLeft"`
-	BottomRight PositionJSON `json:"bottomRight"`
+	TopLeft     PositionJSON `json:"top_left"`
+	BottomRight PositionJSON `json:"bottom_right"`
 }
 
 type NotifyDatagram struct {
 	BaseDatagram
-	VehicleId   int    `json:"vehicleId"`
+	VehicleId   int    `json:"vehicle_id"`
 	Level       string `json:"level"`
-	ContentType string `json:"contentType"`
+	ContentType string `json:"content_type"`
 }
 
 func (notifyDatagram *NotifyDatagram) GetNotifyDatagram() *NotifyDatagram {
@@ -142,7 +142,7 @@ func (notifyDatagram *CrossroadNotifyDatagram) GetContent() interface{} {
 type NotifyVehicleDatagram struct {
 	BaseDatagram
 	Level       string `json:"level"`
-	ContentType string `json:"contentType"`
+	ContentType string `json:"content_type"`
 }
 
 type GenericNotifyVehicleDatagram struct {
@@ -181,7 +181,7 @@ type ConnectVehicleDatagram struct {
 
 type DisconnectVehicleDatagram struct {
 	BaseDatagram
-	ConnectTo string `json:"connectTo"`
+	ConnectTo string `json:"connect_to"`
 }
 
 type UpdateVehicleDatagram struct {
@@ -190,32 +190,28 @@ type UpdateVehicleDatagram struct {
 }
 
 type UpdateVehiclesVehicle struct {
-	Timestamp          string  `json:"timestamp"`
-	Id                 int     `json:"id"`
-	Longitude          float32 `json:"Longitude"`
-	Latitude           float32 `json:"Latitude"`
-	CarDirection       float32 `json:"CarDirection"`
-	DistanceUltrasonic float32 `json:"DistanceUltrasonic"`
-	RearUltrasonic     float32 `json:"RearUltrasonic"`
-	DistanceLidar      float32 `json:"DistanceLidar"`
-	SpeedFrontLeft     float32 `json:"SpeedFrontLeft"`
-	SpeedFrontRight    float32 `json:"SpeedFrontRight"`
-	SpeedRearLeft      float32 `json:"SpeedRearLeft"`
-	SpeedRearRight     float32 `json:"SpeedRearRight"`
+	Timestamp       string  `json:"timestamp"`
+	Id              int     `json:"id"`
+	Longitude       float32 `json:"longitude"`
+	Latitude        float32 `json:"latitude"`
+	FrontUltrasonic float32 `json:"front_ultrasonic"`
+	FrontLidar      float32 `json:"front_lidar"`
+	SpeedFrontLeft  float32 `json:"speed_front_left"`
+	SpeedFrontRight float32 `json:"speed_front_right"`
+	SpeedRearLeft   float32 `json:"speed_rear_left"`
+	SpeedRearRight  float32 `json:"speed_rear_right"`
 }
 
 type UpdateVehicleVehicle struct {
-	Vin                string  `json:"vin"`
-	Longitude          float32 `json:"Longitude"`
-	Latitude           float32 `json:"Latitude"`
-	CarDirection       float32 `json:"CarDirection"`
-	DistanceUltrasonic float32 `json:"DistanceUltrasonic"`
-	RearUltrasonic     float32 `json:"RearUltrasonic"`
-	DistanceLidar      float32 `json:"DistanceLidar"`
-	SpeedFrontLeft     float32 `json:"SpeedFrontLeft"`
-	SpeedFrontRight    float32 `json:"SpeedFrontRight"`
-	SpeedRearLeft      float32 `json:"SpeedRearLeft"`
-	SpeedRearRight     float32 `json:"SpeedRearRight"`
+	Vin             string  `json:"vin"`
+	Longitude       float32 `json:"longitude"`
+	Latitude        float32 `json:"latitude"`
+	FrontUltrasonic float32 `json:"front_ultrasonic"`
+	FrontLidar      float32 `json:"front_lidar"`
+	SpeedFrontLeft  float32 `json:"speed_front_left"`
+	SpeedFrontRight float32 `json:"speed_front_right"`
+	SpeedRearLeft   float32 `json:"speed_rear_left"`
+	SpeedRearRight  float32 `json:"speed_rear_right"`
 }
 
 type UpdateVehicleDecision struct {
@@ -235,9 +231,9 @@ type UpdateNotificationsDatagram struct {
 
 type UpdateNotificationsNotification struct {
 	Timestamp   string      `json:"timestamp"`
-	VehicleId   int         `json:"vehicleId"`
+	VehicleId   int         `json:"vehicle_id"`
 	Level       string      `json:"level"`
-	ContentType string      `json:"contentType"`
+	ContentType string      `json:"content_type"`
 	Content     interface{} `json:"content"`
 }
 
@@ -251,20 +247,20 @@ type GenericNotificationContent struct {
 }
 
 type HeadCollisionNotificationContent struct {
-	TargetVehicleId      int     `json:"targetVehicleId"`
-	TimeToCollision      float32 `json:"timeToCollision"`
-	MaxSpeedExceededBy   float32 `json:"maxSpeedExceededBy"`
-	BreakingDistanceDiff float32 `json:"breakingDistanceDiff"`
+	TargetVehicleId      int     `json:"target_vehicle_id"`
+	TimeToCollision      float32 `json:"time_to_collision"`
+	MaxSpeedExceededBy   float32 `json:"max_speed_exceeded_by"`
+	BreakingDistanceDiff float32 `json:"breaking_distance_diff"`
 }
 
 type ChainCollisionNotificationContent struct {
-	TargetVehicleId     int     `json:"targetVehicleId"`
-	CurrentDistance     float32 `json:"currentDistance"`
-	RecommendedDistance float32 `json:"recommendedDistance"`
+	TargetVehicleId     int     `json:"target_vehicle_id"`
+	CurrentDistance     float32 `json:"current_distance"`
+	RecommendedDistance float32 `json:"recommended_distance"`
 }
 
 type CrossroadNotificationContent struct {
 	Text       string `json:"text"`
 	Order      int    `json:"order"`
-	RightOfWay bool   `json:"rightOfWay"`
+	RightOfWay bool   `json:"right_of_way"`
 }

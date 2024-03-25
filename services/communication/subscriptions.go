@@ -87,6 +87,8 @@ func (subscription *Subscription) SendIntervalUpdates() error {
 				BaseDatagram:  models.BaseDatagram{Type: "update_notifications"},
 				Notifications: subscription.Connection.DataModel.GetNotifications(true),
 			}
+		case "network-statistics":
+			//
 		default:
 			return fmt.Errorf("unsupported content of subscription: %v", subscription.Content)
 		}

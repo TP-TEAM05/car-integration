@@ -2,6 +2,8 @@ package communication
 
 import (
 	models "car-integration/models"
+	"car-integration/services/redis"
+	"car-integration/services/statistics"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -318,6 +320,7 @@ type VehicleConnection struct {
 	Connection
 	VinNumber    string
 	Subscription *Subscription
+	NetworkStats *statistics.NetworkStatistics
 }
 
 func (connection *VehicleConnection) Subscribe(safe bool) {
@@ -378,6 +381,13 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		connection.VinNumber = updateVehicleDatagram.Vehicle.Vin
 		if safe {
 			connection.Unlock()
+		}
+
+		connection.NetworkStats.Update(updateVehicleDatagram, time.Now().UTC())
+		// Save stats to Redis
+		err := redis.SaveNetworkStats(updateVehicleDatagram.Vehicle.Vin, &connection.NetworkStats.Stats)
+		if err != nil {
+			fmt.Println("Failed to save network stats:", err)
 		}
 
 		// Create subscription

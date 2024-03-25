@@ -1,6 +1,7 @@
 package communication
 
 import (
+	"car-integration/services/statistics"
 	"fmt"
 	"net"
 	"os"
@@ -125,6 +126,7 @@ func (manager *ConnectionsManager) GetOrCreateConnection(conn *net.UDPConn, addr
 					DataModel:         manager.DataModel,
 					KeepAliveTimeout:  manager.KeepAliveTimeout,
 				},
+				NetworkStats: statistics.NewNetworkStatistics(),
 			}
 		default:
 			return nil

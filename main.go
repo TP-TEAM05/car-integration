@@ -7,6 +7,7 @@ import (
 	models "car-integration/models"
 	communication "car-integration/services/communication"
 	database "car-integration/services/database"
+	redis "car-integration/services/redis"
 
 	"github.com/rs/zerolog"
 )
@@ -28,6 +29,7 @@ func main() {
 	var dataModel = communication.NewDataModel(&area, 0)
 
 	database.Init()
+	redis.Init()
 
 	// decision module
 	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).

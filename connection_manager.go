@@ -65,7 +65,6 @@ func (manager *ConnectionsManager) StartListening(port int, safe bool) {
 			manager.Unlock()
 		}
 
-		fmt.Printf("%s Server %v: Read a message from %v %s \n", connectionType, port, clientAddress, readBuffer[:min(readBufferLength, 64)])
 		manager.LogInput(string(readBuffer[:readBufferLength]), clientAddress, port, connectionType)
 
 		if err != nil {

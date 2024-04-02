@@ -1,11 +1,12 @@
 package communication
 
 import (
-	models "car-integration/models"
 	"car-integration/services/redis"
 	"errors"
 	"fmt"
 	"time"
+
+	api "github.com/ReCoFIIT/integration-api"
 )
 
 type Subscription struct {
@@ -41,8 +42,8 @@ func (subscription *Subscription) SendLiveUpdates() error {
 
 		subscription.Connection.DataModel.updateCond.Wait()
 
-		var datagram = &models.UpdatePositionVehicleDatagram{
-			BaseDatagram: models.BaseDatagram{Type: "update_vehicle_position"},
+		var datagram = &api.UpdatePositionVehicleDatagram{
+			BaseDatagram: api.BaseDatagram{Type: "update_vehicle_position"},
 			Vehicle:      subscription.Connection.DataModel.GetVehicleById(subscription.Connection.DataModel.UpdatedVehicleVin),
 		}
 
@@ -59,8 +60,8 @@ func (subscription *Subscription) SendDecisionUpdates() error {
 		subscription.Connection.DataModel.updateCondDecision.Wait()
 
 		if subscription.Topic == subscription.Connection.DataModel.UpdatedVehicleDecisionVin {
-			var datagram = &models.UpdateVehicleDecisionDatagram{
-				BaseDatagram:    models.BaseDatagram{Type: "update_vehicle_position"},
+			var datagram = &api.UpdateVehicleDecisionDatagram{
+				BaseDatagram:    api.BaseDatagram{Type: "update_vehicle_position"},
 				VehicleDecision: subscription.Connection.DataModel.GetVehicleDecisionById(subscription.Connection.DataModel.UpdatedVehicleVin),
 			}
 
@@ -75,22 +76,22 @@ func (subscription *Subscription) SendDecisionUpdates() error {
 func (subscription *Subscription) SendIntervalUpdates() error {
 	for {
 		// Send update
-		var datagram models.IDatagram
+		var datagram api.IDatagram
 		switch subscription.Topic {
 		case "vehicles":
-			datagram = &models.UpdateVehiclesDatagram{
-				BaseDatagram: models.BaseDatagram{Type: "update_vehicles"},
+			datagram = &api.UpdateVehiclesDatagram{
+				BaseDatagram: api.BaseDatagram{Type: "update_vehicles"},
 				Vehicles:     subscription.Connection.DataModel.GetVehicles(true),
 			}
 
 		case "notifications":
-			datagram = &models.UpdateNotificationsDatagram{
-				BaseDatagram:  models.BaseDatagram{Type: "update_notifications"},
+			datagram = &api.UpdateNotificationsDatagram{
+				BaseDatagram:  api.BaseDatagram{Type: "update_notifications"},
 				Notifications: subscription.Connection.DataModel.GetNotifications(true),
 			}
 		case "network-statistics":
 			var vehicles = subscription.Connection.DataModel.GetVehicles(true)
-			var networkStats []models.NetworkStatistics
+			var networkStats []api.NetworkStatistics
 
 			for _, vehicle := range vehicles {
 				statsPtr := redis.GetNetworkStats(vehicle.Vin)
@@ -98,7 +99,7 @@ func (subscription *Subscription) SendIntervalUpdates() error {
 				if statsPtr != nil {
 					stats := *statsPtr
 
-					var mappedStats models.NetworkStatistics
+					var mappedStats api.NetworkStatistics
 					mappedStats.PacketsReceived = stats.PacketsReceived
 					mappedStats.ReceiveErrors = stats.ReceiveErrors
 					mappedStats.AverageLatency = int64(stats.AverageLatency)
@@ -107,8 +108,8 @@ func (subscription *Subscription) SendIntervalUpdates() error {
 					networkStats = append(networkStats, mappedStats)
 				}
 			}
-			datagram = &models.NetworkStatisticsDatagram{
-				BaseDatagram:      models.BaseDatagram{Type: "update_vehicles"},
+			datagram = &api.NetworkStatisticsDatagram{
+				BaseDatagram:      api.BaseDatagram{Type: "update_vehicles"},
 				NetworkStatistics: networkStats,
 			}
 		default:

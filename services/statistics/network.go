@@ -1,9 +1,10 @@
 package statistics
 
 import (
-	"car-integration/models"
 	"fmt"
 	"time"
+
+	api "github.com/ReCoFIIT/integration-api"
 )
 
 type NetworkStats struct {
@@ -33,7 +34,7 @@ func (ns *NetworkStatistics) GetStats() NetworkStats {
 	return ns.Stats
 }
 
-func (ns *NetworkStatistics) Update(datagram models.UpdateVehicleDatagram, receivedAt time.Time) {
+func (ns *NetworkStatistics) Update(datagram api.UpdateVehicleDatagram, receivedAt time.Time) {
 	ns.Stats.PacketsReceived++
 
 	// Jitter calculation

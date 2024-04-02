@@ -4,23 +4,24 @@ import (
 	"log"
 	"net/http"
 
-	models "car-integration/models"
+	"car-integration/models"
 	communication "car-integration/services/communication"
 	database "car-integration/services/database"
 	redis "car-integration/services/redis"
 
+	api "github.com/ReCoFIIT/integration-api"
 	"github.com/rs/zerolog"
 )
 
 func main() {
-	zerolog.TimeFieldFormat = models.TimestampFormat
+	zerolog.TimeFieldFormat = api.TimestampFormat
 
 	area := models.Area{
-		TopLeft: models.PositionJSON{
+		TopLeft: api.PositionJSON{
 			Lat: 0,
 			Lon: 0,
 		},
-		BottomRight: models.PositionJSON{
+		BottomRight: api.PositionJSON{
 			Lat: 0,
 			Lon: 0,
 		},

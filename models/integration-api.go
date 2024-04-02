@@ -166,7 +166,7 @@ type CrossroadNotifyVehicleDatagram struct {
 }
 type UpdateVehiclesDatagram struct {
 	BaseDatagram
-	Vehicles []UpdateVehiclesVehicle `json:"vehicles"`
+	Vehicles []UpdateVehicleVehicle `json:"vehicles"`
 }
 
 type UpdatePositionVehicleDatagram struct {
@@ -227,6 +227,18 @@ type UpdateVehicleDecisionDatagram struct {
 type UpdateNotificationsDatagram struct {
 	BaseDatagram
 	Notifications []UpdateNotificationsNotification `json:"notifications"`
+}
+
+type NetworkStatisticsDatagram struct {
+	BaseDatagram
+	NetworkStatistics []NetworkStatistics `json:"networkStatistics"`
+}
+
+type NetworkStatistics struct {
+	PacketsReceived int64 `json:"packetsReceived"`
+	ReceiveErrors   int64 `json:"receiveErrors"`
+	AverageLatency  int64 `json:"averageLatency"`
+	Jitter          int64 `json:"jitter"`
 }
 
 type UpdateNotificationsNotification struct {

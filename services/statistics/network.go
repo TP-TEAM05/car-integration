@@ -29,6 +29,10 @@ func NewNetworkStatistics() *NetworkStatistics {
 	}
 }
 
+func (ns *NetworkStatistics) GetStats() NetworkStats {
+	return ns.Stats
+}
+
 func (ns *NetworkStatistics) Update(datagram models.UpdateVehicleDatagram, receivedAt time.Time) {
 	ns.Stats.PacketsReceived++
 

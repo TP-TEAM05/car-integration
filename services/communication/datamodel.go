@@ -240,18 +240,17 @@ func (dataModel *DataModel) DeleteVehicle(vin string, safe bool) {
 	delete(dataModel.Vehicles, vin)
 }
 
-func (dataModel *DataModel) GetVehicles(safe bool) []models.UpdateVehiclesVehicle {
+func (dataModel *DataModel) GetVehicles(safe bool) []models.UpdateVehicleVehicle {
 	if safe {
 		dataModel.Lock()
 		defer dataModel.Unlock()
 	}
 
-	var vehicles = make([]models.UpdateVehiclesVehicle, len(dataModel.Vehicles))
+	var vehicles = make([]models.UpdateVehicleVehicle, len(dataModel.Vehicles))
 	i := 0
 	for _, vehicle := range dataModel.Vehicles {
-		vehicles[i] = models.UpdateVehiclesVehicle{
-			Timestamp:       vehicle.Timestamp,
-			Id:              vehicle.Id,
+		vehicles[i] = models.UpdateVehicleVehicle{
+			Vin:             vehicle.Vin,
 			Longitude:       vehicle.Longitude,
 			Latitude:        vehicle.Latitude,
 			FrontUltrasonic: vehicle.FrontUltrasonic,

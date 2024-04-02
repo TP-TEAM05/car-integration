@@ -2,6 +2,7 @@ package communication
 
 import (
 	models "car-integration/models"
+	"car-integration/services/redis"
 	"errors"
 	"fmt"
 	"time"
@@ -88,7 +89,28 @@ func (subscription *Subscription) SendIntervalUpdates() error {
 				Notifications: subscription.Connection.DataModel.GetNotifications(true),
 			}
 		case "network-statistics":
-			//
+			var vehicles = subscription.Connection.DataModel.GetVehicles(true)
+			var networkStats []models.NetworkStatistics
+
+			for _, vehicle := range vehicles {
+				statsPtr := redis.GetNetworkStats(vehicle.Vin)
+
+				if statsPtr != nil {
+					stats := *statsPtr
+
+					var mappedStats models.NetworkStatistics
+					mappedStats.PacketsReceived = stats.PacketsReceived
+					mappedStats.ReceiveErrors = stats.ReceiveErrors
+					mappedStats.AverageLatency = int64(stats.AverageLatency)
+					mappedStats.Jitter = int64(stats.Jitter)
+
+					networkStats = append(networkStats, mappedStats)
+				}
+			}
+			datagram = &models.NetworkStatisticsDatagram{
+				BaseDatagram:      models.BaseDatagram{Type: "update_vehicles"},
+				NetworkStatistics: networkStats,
+			}
 		default:
 			return fmt.Errorf("unsupported content of subscription: %v", subscription.Content)
 		}

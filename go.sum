@@ -1,3 +1,7 @@
+github.com/ReCoFIIT/integration-api v1.0.3 h1:T47T754uaJF2+Dd0QCnslIZ1jSUx319GjQTAslQOPPk=
+github.com/ReCoFIIT/integration-api v1.0.3/go.mod h1:UT/7uldNY8mg89BnzGwl5bAs++WPvtIoQAA+Sm9bZho=
+github.com/ReCoFIIT/integration-api v1.0.4 h1:7ozZetNEU7GiwNsn39BK+sl6miPEGcyejOmSpqp9fZs=
+github.com/ReCoFIIT/integration-api v1.0.4/go.mod h1:UT/7uldNY8mg89BnzGwl5bAs++WPvtIoQAA+Sm9bZho=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

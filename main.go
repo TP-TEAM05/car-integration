@@ -6,18 +6,19 @@ import (
 
 	database "car-integration/services"
 
+	api "github.com/ReCoFIIT/integration-api"
 	"github.com/rs/zerolog"
 )
 
 func main() {
-	zerolog.TimeFieldFormat = TimestampFormat
+	zerolog.TimeFieldFormat = api.TimestampFormat
 
 	area := Area{
-		TopLeft: PositionJSON{
+		TopLeft: api.PositionJSON{
 			Lat: 0,
 			Lon: 0,
 		},
-		BottomRight: PositionJSON{
+		BottomRight: api.PositionJSON{
 			Lat: 0,
 			Lon: 0,
 		},

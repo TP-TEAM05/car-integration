@@ -1,4 +1,4 @@
-package main
+package models
 
 import api "github.com/ReCoFIIT/integration-api"
 

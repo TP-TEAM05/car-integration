@@ -1,6 +1,8 @@
-package main
+package communication
 
 import (
+	"car-integration/services/redis"
+	"car-integration/services/statistics"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -55,6 +57,7 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 		fmt.Printf("Error writing datagram with error %v\n", err)
 		return
 	}
+	fmt.Printf("Sending message to %v: %s\n", connection.ClientAddress, data[:min(len(data), 128)])
 }
 
 func (connection *Connection) OnDead(safe bool) {
@@ -179,6 +182,13 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 		}
 		connection.WriteDatagram(response, safe)
 
+	case "decision_update":
+		var decisionUpdateDatagram api.UpdateVehicleDecisionDatagram
+		_ = json.Unmarshal(data, &decisionUpdateDatagram)
+		fmt.Printf("decision update arrived....\n")
+
+		connection.DataModel.UpdateVehicleDecision(connection, &decisionUpdateDatagram, true)
+
 	case "notify":
 		var notifyDatagram api.NotifyDatagram
 		_ = json.Unmarshal(data, &notifyDatagram)
@@ -264,7 +274,7 @@ func (connection *ProcessorConnection) Subscribe(datagram *api.SubscribeDatagram
 	}
 	connection.Unsubscribe(datagram.Content, false) // Delete existing subscription if any
 	subscription := &Subscription{
-		connection,
+		&connection.Connection,
 		datagram.Content,
 		datagram.Topic,
 		datagram.Interval,
@@ -309,7 +319,32 @@ func (connection *ProcessorConnection) OnDead(safe bool) {
 
 type VehicleConnection struct {
 	Connection
-	VinNumber string
+	VinNumber    string
+	Subscription *Subscription
+	NetworkStats *statistics.NetworkStatistics
+}
+
+func (connection *VehicleConnection) Subscribe(safe bool) {
+	if safe {
+		connection.Lock()
+		defer connection.Unlock()
+	}
+	subscription := &Subscription{
+		&connection.Connection,
+		"decision-update",
+		connection.VinNumber,
+		1,
+		make(chan bool),
+	}
+
+	connection.Subscription = subscription
+
+	go func() {
+		err := subscription.Start()
+		if err != nil {
+			fmt.Printf("Subscription ended due to an error: %v\n", err)
+		}
+	}()
 }
 
 func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
@@ -347,6 +382,19 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		connection.VinNumber = updateVehicleDatagram.Vehicle.Vin
 		if safe {
 			connection.Unlock()
+		}
+
+		connection.NetworkStats.Update(updateVehicleDatagram, time.Now().UTC())
+		// Save stats to Redis
+		err := redis.SaveNetworkStats(updateVehicleDatagram.Vehicle.Vin, &connection.NetworkStats.Stats)
+		if err != nil {
+			fmt.Println("Failed to save network stats:", err)
+		}
+
+		// Create subscription
+		if connection.Subscription == nil {
+			fmt.Printf("Subscribe function call..." + connection.VinNumber + "\n")
+			connection.Subscribe(safe)
 		}
 
 		// connection.DataModel.Lock()

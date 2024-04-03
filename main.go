@@ -4,7 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	database "car-integration/services"
+	"car-integration/models"
+	communication "car-integration/services/communication"
+	database "car-integration/services/database"
+	redis "car-integration/services/redis"
 
 	api "github.com/ReCoFIIT/integration-api"
 	"github.com/rs/zerolog"
@@ -13,7 +16,7 @@ import (
 func main() {
 	zerolog.TimeFieldFormat = api.TimestampFormat
 
-	area := Area{
+	area := models.Area{
 		TopLeft: api.PositionJSON{
 			Lat: 0,
 			Lon: 0,
@@ -24,20 +27,21 @@ func main() {
 		},
 	}
 
-	var dataModel = NewDataModel(&area, 0)
+	var dataModel = communication.NewDataModel(&area, 0)
 
 	database.Init()
+	redis.Init()
 
 	// decision module
-	go NewConnectionsManager(dataModel, "processor", 0, nil).
+	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).
 		StartListening(6060, true)
 
 	// backend
-	go NewConnectionsManager(dataModel, "processor", 0, nil).
+	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).
 		StartListening(5050, true)
 
 	// car simulator
-	go NewConnectionsManager(dataModel, "vehicle", 0, nil).
+	go communication.NewConnectionsManager(dataModel, "vehicle", 0, nil).
 		StartListening(4040, true)
 
 	// Debug for pprof

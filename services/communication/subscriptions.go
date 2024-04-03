@@ -1,6 +1,7 @@
-package main
+package communication
 
 import (
+	"car-integration/services/redis"
 	"errors"
 	"fmt"
 	"time"
@@ -9,7 +10,7 @@ import (
 )
 
 type Subscription struct {
-	Connection *ProcessorConnection
+	Connection *Connection
 	Content    string
 	Topic      string
 	Interval   float32
@@ -22,6 +23,8 @@ func (subscription *Subscription) Start() error {
 		err = subscription.SendIntervalUpdates()
 	} else if subscription.Content == "live-updates" {
 		err = subscription.SendLiveUpdates()
+	} else if subscription.Content == "decision-update" {
+		err = subscription.SendDecisionUpdates()
 	} else {
 		err = errors.New("invalid content parameter: " + subscription.Content)
 	}
@@ -50,6 +53,26 @@ func (subscription *Subscription) SendLiveUpdates() error {
 	}
 }
 
+func (subscription *Subscription) SendDecisionUpdates() error {
+	for {
+		subscription.Connection.DataModel.Lock()
+
+		subscription.Connection.DataModel.updateCondDecision.Wait()
+
+		if subscription.Topic == subscription.Connection.DataModel.UpdatedVehicleDecisionVin {
+			var datagram = &api.UpdateVehicleDecisionDatagram{
+				BaseDatagram:    api.BaseDatagram{Type: "update_vehicle_position"},
+				VehicleDecision: subscription.Connection.DataModel.GetVehicleDecisionById(subscription.Connection.DataModel.UpdatedVehicleVin),
+			}
+
+			subscription.Connection.WriteDatagram(datagram, true)
+			fmt.Printf("Sent decision update...... to car %v\n", subscription.Connection.DataModel.UpdatedVehicleVin)
+		}
+		subscription.Connection.DataModel.Unlock()
+
+	}
+}
+
 func (subscription *Subscription) SendIntervalUpdates() error {
 	for {
 		// Send update
@@ -65,6 +88,29 @@ func (subscription *Subscription) SendIntervalUpdates() error {
 			datagram = &api.UpdateNotificationsDatagram{
 				BaseDatagram:  api.BaseDatagram{Type: "update_notifications"},
 				Notifications: subscription.Connection.DataModel.GetNotifications(true),
+			}
+		case "network-statistics":
+			var vehicles = subscription.Connection.DataModel.GetVehicles(true)
+			var networkStats []api.NetworkStatistics
+
+			for _, vehicle := range vehicles {
+				statsPtr := redis.GetNetworkStats(vehicle.Vin)
+
+				if statsPtr != nil {
+					stats := *statsPtr
+
+					var mappedStats api.NetworkStatistics
+					mappedStats.PacketsReceived = stats.PacketsReceived
+					mappedStats.ReceiveErrors = stats.ReceiveErrors
+					mappedStats.AverageLatency = int64(stats.AverageLatency)
+					mappedStats.Jitter = int64(stats.Jitter)
+
+					networkStats = append(networkStats, mappedStats)
+				}
+			}
+			datagram = &api.NetworkStatisticsDatagram{
+				BaseDatagram:      api.BaseDatagram{Type: "update_vehicles"},
+				NetworkStatistics: networkStats,
 			}
 		default:
 			return fmt.Errorf("unsupported content of subscription: %v", subscription.Content)

@@ -14,7 +14,7 @@ Received data from cars are resent to every module that subscribed to it. There 
 #### Data sent from car has the following attributes:
 
 ```go
-type UpdateVehicleVehicle {
+type UpdateVehicleVehicle struct {
     Id                  int     
     Vin                 string  
     IsControlledByUser  bool    
@@ -35,7 +35,7 @@ type UpdateVehicleVehicle {
 Decision updates from decision-module are automatically sent separately to each connected car by their VIN. The message has following structure:
 
 ```go
-UpdateVehicleDecision  {
+type UpdateVehicleDecision struct {
     Vin       	string 
     Message   	string 
 }
@@ -45,12 +45,14 @@ UpdateVehicleDecision  {
 ### Network statistics
 Network statistics can be sent to subscribed submodule by specifying topic parameter as „network-statistics“. The message consists of following information:
 
-NetworkStatistics {
+```go
+type NetworkStatistics struct {
     PacketsReceived 	int64 
     ReceiveErrors   	int64 
     AverageLatency  	int64 
     Jitter          		int64 
 }
+```
 
 ## Subscription Logic
 The subscription logic operates by awaiting synchronization conditions, which are triggered upon the reception of a packet. The sync conditions are in a DataModel class.

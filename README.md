@@ -9,7 +9,11 @@ This submodule serves as an integration between cars and other modules in the so
 Received data from cars are resent to every module that subscribed to it. There are two modes to subscribe to car updates:
 
 - **Live Updates**: Sends every update from the car as soon as it receives it.
-- **Periodic Updates**: Sends the data only at periodic intervals that can be specified in the subscription packet. This mode needs a "topic" parameter – the topic can be "car" or "network-statistics".
+- **Periodic Updates**: Sends the data only at periodic intervals that can be specified in the subscription 
+
+Car integration can provide updates about cars or network updates, based on specified topic:
+- **Car**
+- **Network updates** 
 
 #### Data sent from car has the following attributes:
 

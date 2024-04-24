@@ -23,7 +23,7 @@ type DataModel struct {
 	sync.Mutex
 	Area                   *models.Area
 	Vehicles               map[string]*Vehicle
-	VehicleDecisions       map[string]*VehicleDecision
+	VehicleDecisions       map[string]*api.UpdateVehicleDecision
 	NextVehicleId          int
 	VehicleConnectionsById map[int]*VehicleConnection // Maps vehicleId to its connection
 	Notifications          map[int]map[string]*Notification
@@ -40,7 +40,7 @@ func NewDataModel(area *models.Area, notificationDuration float32) *DataModel {
 	dm := &DataModel{
 		Area:                   area,
 		Vehicles:               make(map[string]*Vehicle),
-		VehicleDecisions:       make(map[string]*VehicleDecision),
+		VehicleDecisions:       make(map[string]*api.UpdateVehicleDecision),
 		Notifications:          make(map[int]map[string]*Notification),
 		VehicleConnectionsById: make(map[int]*VehicleConnection),
 		NotificationDuration:   notificationDuration,
@@ -203,21 +203,21 @@ func (dataModel *DataModel) UpdateVehicleDecision(connection *ProcessorConnectio
 
 	savedVehicle, ok := dataModel.VehicleDecisions[vehicleDecision.Vin]
 	if !ok {
-		savedVehicle = &VehicleDecision{
-			Timestamp: vehicleDecision.Timestamp,
+		savedVehicle = &api.UpdateVehicleDecision{
+			Message: vehicleDecision.Message,
 			Vin:       vehicleDecision.Vin,
 		}
 		dataModel.VehicleDecisions[savedVehicle.Vin] = savedVehicle
 	} else {
-		newTime, err := time.Parse(api.TimestampFormat, datagram.Timestamp)
+		newTime, err := time.Parse(api.TimestampFormat, datagram.BaseDatagram.Timestamp)
 		if err != nil {
-			fmt.Printf("Failed to parse %v\n", datagram.Timestamp)
+			fmt.Printf("Failed to parse %v\n", datagram.BaseDatagram.Timestamp)
 			return
 		}
 
-		lastTime, err := time.Parse(api.TimestampFormat, savedVehicle.Timestamp)
+		lastTime, err := time.Parse(api.TimestampFormat, datagram.BaseDatagram.Timestamp)
 		if err != nil {
-			fmt.Printf("Failed to parse %v\n", savedVehicle.Timestamp)
+			fmt.Printf("Failed to parse %v\n", datagram.BaseDatagram.Timestamp)
 			return
 		}
 
@@ -227,7 +227,7 @@ func (dataModel *DataModel) UpdateVehicleDecision(connection *ProcessorConnectio
 		}
 	}
 
-	savedVehicle.Timestamp = datagram.Timestamp
+	savedVehicle.Message = savedVehicle.Message
 	dataModel.UpdatedVehicleDecisionVin = savedVehicle.Vin
 
 	dataModel.updateCondDecision.Broadcast()
@@ -299,7 +299,7 @@ func (dataModel *DataModel) GetVehicleDecisionById(id string) api.UpdateVehicleD
 	// Vehicle found, return the corresponding UpdateVehiclesVehicle
 	return api.UpdateVehicleDecision{
 		Vin:       vehicle.Vin,
-		Timestamp: vehicle.Timestamp,
+		Message:   vehicle.Message,
 	}
 }
 
@@ -327,14 +327,6 @@ type Vehicle struct {
 	SpeedFrontRight float32
 	SpeedRearLeft   float32
 	SpeedRearRight  float32
-}
-
-type VehicleDecision struct {
-	// sync.Mutex
-	Timestamp string
-	Vin       string
-
-	// updateCond *sync.Cond
 }
 
 type Notification struct {

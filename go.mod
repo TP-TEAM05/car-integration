@@ -3,7 +3,7 @@ module car-integration
 go 1.22.0
 
 require (
-	github.com/ReCoFIIT/integration-api v1.0.9
+	github.com/ReCoFIIT/integration-api v1.1.0
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/rs/zerolog v1.32.0
 	gorm.io/driver/postgres v1.5.7

@@ -57,7 +57,7 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 		fmt.Printf("Error writing datagram with error %v\n", err)
 		return
 	}
-	fmt.Printf("Sending message to %v: %s\n", connection.ClientAddress, data[:min(len(data), 128)])
+	// fmt.Printf("Sending message to %v: %s\n", connection.ClientAddress, data[:min(len(data), 128)])
 }
 
 func (connection *Connection) OnDead(safe bool) {
@@ -373,7 +373,26 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 
 	case "update_vehicle":
 		var updateVehicleDatagram api.UpdateVehicleDatagram
+		// DEBUG: Here are the data received from vehicle
+
 		_ = json.Unmarshal(data, &updateVehicleDatagram)
+
+		// TODO: Generalize this nasty hack for remapping key names
+
+		type VehicleData struct {
+			Vehicle struct {
+				Hacc float32 `json:"hacc"`
+			} `json:"vehicle"`
+		}
+
+		remap := VehicleData{}
+
+		_ = json.Unmarshal(data, &remap)
+
+		// convert to meters
+		updateVehicleDatagram.Vehicle.GpsHorizontalAccuracy = remap.Vehicle.Hacc / 100
+
+		// Continue with the rest of the parsing
 
 		// Update vehicle data in connection
 		if safe {

@@ -154,8 +154,8 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 	savedVehicle, ok := dataModel.Vehicles[vehicle.Vin]
 	if !ok {
 		savedVehicle = &Vehicle{
-			Id:  dataModel.NextVehicleId,
-			Vin: vehicle.Vin,
+			Timestamp:            datagram.Timestamp,
+			UpdateVehicleVehicle: vehicle,
 		}
 		dataModel.NextVehicleId++
 		dataModel.Vehicles[vehicle.Vin] = savedVehicle
@@ -178,15 +178,7 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 		}
 	}
 
-	savedVehicle.Timestamp = datagram.Timestamp
-	savedVehicle.Longitude = vehicle.Longitude
-	savedVehicle.Latitude = vehicle.Latitude
-	savedVehicle.FrontUltrasonic = vehicle.FrontUltrasonic
-	savedVehicle.FrontLidar = vehicle.FrontLidar
-	savedVehicle.SpeedFrontLeft = vehicle.SpeedFrontLeft
-	savedVehicle.SpeedFrontRight = vehicle.SpeedFrontRight
-	savedVehicle.SpeedRearRight = vehicle.SpeedRearRight
-	savedVehicle.SpeedRearLeft = vehicle.SpeedRearLeft
+	savedVehicle.UpdateVehicleVehicle = vehicle
 
 	dataModel.VehicleConnectionsById[savedVehicle.Id] = connection
 	dataModel.UpdatedVehicleVin = vehicle.Vin
@@ -205,7 +197,7 @@ func (dataModel *DataModel) UpdateVehicleDecision(connection *ProcessorConnectio
 	if !ok {
 		savedVehicle = &api.UpdateVehicleDecision{
 			Message: vehicleDecision.Message,
-			Vin:       vehicleDecision.Vin,
+			Vin:     vehicleDecision.Vin,
 		}
 		dataModel.VehicleDecisions[savedVehicle.Vin] = savedVehicle
 	} else {
@@ -227,7 +219,6 @@ func (dataModel *DataModel) UpdateVehicleDecision(connection *ProcessorConnectio
 		}
 	}
 
-	savedVehicle.Message = savedVehicle.Message
 	dataModel.UpdatedVehicleDecisionVin = savedVehicle.Vin
 
 	dataModel.updateCondDecision.Broadcast()
@@ -298,8 +289,8 @@ func (dataModel *DataModel) GetVehicleDecisionById(id string) api.UpdateVehicleD
 	}
 	// Vehicle found, return the corresponding UpdateVehiclesVehicle
 	return api.UpdateVehicleDecision{
-		Vin:       vehicle.Vin,
-		Message:   vehicle.Message,
+		Vin:     vehicle.Vin,
+		Message: vehicle.Message,
 	}
 }
 
@@ -316,17 +307,8 @@ func (dataModel *DataModel) GetVehicleConnection(vehicleId int, safe bool) *Vehi
 }
 
 type Vehicle struct {
-	Timestamp       string
-	Id              int
-	Vin             string
-	Longitude       float32
-	Latitude        float32
-	FrontUltrasonic float32
-	FrontLidar      float32
-	SpeedFrontLeft  float32
-	SpeedFrontRight float32
-	SpeedRearLeft   float32
-	SpeedRearRight  float32
+	api.UpdateVehicleVehicle
+	Timestamp string
 }
 
 type Notification struct {

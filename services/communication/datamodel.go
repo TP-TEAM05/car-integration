@@ -3,6 +3,7 @@ package communication
 import (
 	"car-integration/models"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -262,29 +263,20 @@ func (dataModel *DataModel) GetVehicleById(id string) api.UpdateVehicleVehicle {
 	// Look up the vehicle by ID directly
 	vehicle, ok := dataModel.Vehicles[id]
 	if !ok {
-		// Vehicle not found
-
+		log.Fatalf("Vehicle with id %v not found", id)
+		return api.UpdateVehicleVehicle{}
 	}
 
 	// Vehicle found, return the corresponding UpdateVehiclesVehicle
-	return api.UpdateVehicleVehicle{
-		Vin:             vehicle.Vin,
-		Longitude:       vehicle.Longitude,
-		Latitude:        vehicle.Latitude,
-		FrontUltrasonic: vehicle.FrontUltrasonic,
-		FrontLidar:      vehicle.FrontLidar,
-		SpeedFrontLeft:  vehicle.SpeedFrontLeft,
-		SpeedFrontRight: vehicle.SpeedFrontRight,
-		SpeedRearRight:  vehicle.SpeedRearRight,
-		SpeedRearLeft:   vehicle.SpeedRearLeft,
-	}
+	return vehicle.UpdateVehicleVehicle
 }
 
 func (dataModel *DataModel) GetVehicleDecisionById(id string) api.UpdateVehicleDecision {
 	// Look up the vehicle by ID directly
 	vehicle, ok := dataModel.VehicleDecisions[id]
 	if !ok {
-		// Vehicle not found
+		log.Fatalf("Vehicle decision with id %v not found", id)
+		return api.UpdateVehicleDecision{}
 
 	}
 	// Vehicle found, return the corresponding UpdateVehiclesVehicle

@@ -49,7 +49,7 @@ func (ns *NetworkStatistics) Update(datagram api.UpdateVehicleDatagram, received
 		ns.Stats.LastDelay = currentDelay
 	}
 	ns.Stats.PrevPacketTime = receivedAt
-	fmt.Printf("Jitter: %v\n", ns.Stats.Jitter)
+	// fmt.Printf("Jitter: %v\n", ns.Stats.Jitter)
 
 	sentTime, err := time.Parse(time.RFC3339, datagram.Timestamp)
 	if err != nil {
@@ -60,5 +60,5 @@ func (ns *NetworkStatistics) Update(datagram api.UpdateVehicleDatagram, received
 	latency := receivedAt.Sub(sentTime)
 	ns.Stats.TotalLatency += latency
 	ns.Stats.AverageLatency = time.Duration(int64(ns.Stats.TotalLatency) / ns.Stats.PacketsReceived)
-	fmt.Printf("Average latency: %v\n", ns.Stats.AverageLatency)
+	// fmt.Printf("Average latency: %v\n", ns.Stats.AverageLatency)
 }

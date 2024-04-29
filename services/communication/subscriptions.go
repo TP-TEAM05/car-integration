@@ -46,6 +46,7 @@ func (subscription *Subscription) SendLiveUpdates() error {
 			BaseDatagram: api.BaseDatagram{Type: "update_vehicle_position"},
 			Vehicle:      subscription.Connection.DataModel.GetVehicleById(subscription.Connection.DataModel.UpdatedVehicleVin),
 		}
+		// DEBUG: Here are the data before sending
 
 		subscription.Connection.WriteDatagram(datagram, true)
 		subscription.Connection.DataModel.Unlock()

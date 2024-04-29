@@ -389,8 +389,7 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 
 		_ = json.Unmarshal(data, &remap)
 
-		// convert to meters
-		updateVehicleDatagram.Vehicle.GpsHorizontalAccuracy = remap.Vehicle.Hacc / 100
+		updateVehicleDatagram.Vehicle.GpsHorizontalAccuracy = remap.Vehicle.Hacc
 
 		// Continue with the rest of the parsing
 

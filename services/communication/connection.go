@@ -178,14 +178,14 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 
 		connection.DataModel.UpdateVehicleDecision(connection, &decisionUpdateDatagram, true)
 
-	if safe {
-		connection.Lock()
+		if safe {
+			connection.Lock()
+		}
+		connection.LastReceivedIndex = datagram.Index
+		if safe {
+			connection.Unlock()
+		}
 	}
-	connection.LastReceivedIndex = datagram.Index
-	if safe {
-		connection.Unlock()
-	}
-}
 }
 
 func (connection *ProcessorConnection) Subscribe(datagram *api.SubscribeDatagram, safe bool) {
@@ -277,9 +277,9 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		fmt.Print("Parsing JSON failed: ", err)
 		return
 	}
-	if datagram.Index <= connection.LastReceivedIndex {
-		return
-	}
+	//if datagram.Index <= connection.LastReceivedIndex {
+	//	return
+	//}
 
 	switch datagram.Type {
 	case "ping":
@@ -296,20 +296,6 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		// DEBUG: Here are the data received from vehicle
 
 		_ = json.Unmarshal(data, &updateVehicleDatagram)
-
-		// TODO: Generalize this nasty hack for remapping key names
-
-		type VehicleData struct {
-			Vehicle struct {
-				Hacc float32 `json:"hacc"`
-			} `json:"vehicle"`
-		}
-
-		remap := VehicleData{}
-
-		_ = json.Unmarshal(data, &remap)
-
-		updateVehicleDatagram.Vehicle.GpsHorizontalAccuracy = remap.Vehicle.Hacc
 
 		// Continue with the rest of the parsing
 

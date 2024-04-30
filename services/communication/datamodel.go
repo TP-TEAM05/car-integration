@@ -43,106 +43,12 @@ func NewDataModel(area *models.Area, notificationDuration float32) *DataModel {
 		Vehicles:               make(map[string]*Vehicle),
 		VehicleDecisions:       make(map[string]*api.UpdateVehicleDecision),
 		Notifications:          make(map[int]map[string]*Notification),
-		VehicleConnectionsById: make(map[int]*VehicleConnection),
-		NotificationDuration:   notificationDuration,
-	}
+		VehicleConnectionsById: make(map[int]*VehicleConnection)}
 	dm.updateCond = sync.NewCond(&dm.Mutex)
 	dm.updateCondDecision = sync.NewCond(&dm.Mutex)
 	return dm
 }
 
-func (dataModel *DataModel) AddNotification(datagram api.INotifyDatagram, safe bool) {
-	if safe {
-		dataModel.Lock()
-		defer dataModel.Unlock()
-	}
-
-	notifyDiagram := datagram.GetNotifyDatagram()
-	notificationId := dataModel.NextNotificationId
-	dataModel.NextNotificationId++
-
-	vehicleNotificationsMap, ok := dataModel.Notifications[notifyDiagram.VehicleId]
-	if !ok {
-		vehicleNotificationsMap = make(map[string]*Notification)
-		dataModel.Notifications[notifyDiagram.VehicleId] = vehicleNotificationsMap
-	}
-
-	// Prepare new notification
-	notification := &Notification{
-		Id: notificationId,
-		Datagram: &api.UpdateNotificationsNotification{
-			Timestamp:   notifyDiagram.Timestamp,
-			VehicleId:   notifyDiagram.VehicleId,
-			Level:       notifyDiagram.Level,
-			ContentType: notifyDiagram.ContentType,
-			Content:     datagram.GetContent(),
-		},
-	}
-
-	// Only add if newer than the one that potentially exists and also only if the danger is bigger (or the vehicle id is the same)
-	existingNotification, ok := vehicleNotificationsMap[notifyDiagram.ContentType]
-	if ok {
-		replaceable, err := existingNotification.ReplaceableBy(notification)
-		if err != nil {
-			fmt.Printf("Error when checking notification replaceability %v\n", err)
-			return
-		}
-		if !replaceable {
-			return
-		}
-	}
-
-	vehicleNotificationsMap[notifyDiagram.ContentType] = notification
-
-	// Delete notification after some time
-	time.AfterFunc(time.Duration(float32(time.Second)*dataModel.NotificationDuration), func() {
-		dataModel.DeleteNotification(notifyDiagram.VehicleId, notifyDiagram.ContentType, notificationId, true)
-	})
-}
-
-func (dataModel *DataModel) DeleteNotification(vehicleId int, contentType string, notificationId int, safe bool) {
-	if safe {
-		dataModel.Lock()
-		defer dataModel.Unlock()
-	}
-	vehicleNotificationsMap, ok := dataModel.Notifications[vehicleId]
-	if ok {
-		existingNotification, ok := vehicleNotificationsMap[contentType]
-		if ok && existingNotification.Id == notificationId {
-			delete(vehicleNotificationsMap, contentType)
-		}
-	}
-}
-
-func (dataModel *DataModel) GetNotifications(safe bool) []api.UpdateNotificationsNotification {
-	if safe {
-		dataModel.Lock()
-		defer dataModel.Unlock()
-	}
-
-	var notifications = make([]api.UpdateNotificationsNotification, dataModel.GetNotificationsCount(false))
-	i := 0
-	for _, vehicleNotifications := range dataModel.Notifications {
-		for _, notification := range vehicleNotifications {
-			notifications[i] = *notification.Datagram
-			i++
-		}
-	}
-	return notifications
-}
-
-// Returns count of items of nested map (one level deep). */
-func (dataModel *DataModel) GetNotificationsCount(safe bool) int {
-	if safe {
-		dataModel.Lock()
-		defer dataModel.Unlock()
-	}
-	count := 0
-	for _, innerMap := range dataModel.Notifications {
-		count += len(innerMap)
-	}
-	return count
-}
 
 func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagram *api.UpdateVehicleDatagram, safe bool) {
 	if safe {

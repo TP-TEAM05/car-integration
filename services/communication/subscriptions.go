@@ -84,12 +84,6 @@ func (subscription *Subscription) SendIntervalUpdates() error {
 				BaseDatagram: api.BaseDatagram{Type: "update_vehicles"},
 				Vehicles:     subscription.Connection.DataModel.GetVehicles(true),
 			}
-
-		case "notifications":
-			datagram = &api.UpdateNotificationsDatagram{
-				BaseDatagram:  api.BaseDatagram{Type: "update_notifications"},
-				Notifications: subscription.Connection.DataModel.GetNotifications(true),
-			}
 		case "network-statistics":
 			var vehicles = subscription.Connection.DataModel.GetVehicles(true)
 			var networkStats []api.NetworkStatistics

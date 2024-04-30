@@ -171,92 +171,12 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 		}
 		connection.WriteDatagram(response, safe)
 
-	case "request_area":
-		var requestAreaDatagram api.RequestAreaDatagram
-		_ = json.Unmarshal(data, &requestAreaDatagram)
-
-		response := &api.AreaDatagram{
-			BaseDatagram: api.BaseDatagram{Type: "area"},
-			TopLeft:      connection.DataModel.Area.TopLeft,
-			BottomRight:  connection.DataModel.Area.BottomRight,
-		}
-		connection.WriteDatagram(response, safe)
-
 	case "decision_update":
 		var decisionUpdateDatagram api.UpdateVehicleDecisionDatagram
 		_ = json.Unmarshal(data, &decisionUpdateDatagram)
 		fmt.Printf("decision update arrived....\n")
 
 		connection.DataModel.UpdateVehicleDecision(connection, &decisionUpdateDatagram, true)
-
-	case "notify":
-		var notifyDatagram api.NotifyDatagram
-		_ = json.Unmarshal(data, &notifyDatagram)
-		response := &api.AcknowledgeDatagram{
-			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
-			AcknowledgingIndex: notifyDatagram.Index,
-		}
-		connection.WriteDatagram(response, safe)
-
-		var specificNotifyDatagram api.INotifyDatagram
-
-		switch notifyDatagram.ContentType {
-		case "generic":
-			var genericDatagram api.GenericNotifyDatagram
-			_ = json.Unmarshal(data, &genericDatagram)
-			specificNotifyDatagram = &genericDatagram
-		case "head_collision":
-			var headCollisionDatagram api.HeadCollisionNotifyDatagram
-			_ = json.Unmarshal(data, &headCollisionDatagram)
-			specificNotifyDatagram = &headCollisionDatagram
-		case "chain_collision":
-			var chainCollisionDatagram api.ChainCollisionNotifyDatagram
-			_ = json.Unmarshal(data, &chainCollisionDatagram)
-			specificNotifyDatagram = &chainCollisionDatagram
-		case "crossroad":
-			var crossroadDatagram api.CrossroadNotifyDatagram
-			_ = json.Unmarshal(data, &crossroadDatagram)
-			specificNotifyDatagram = &crossroadDatagram
-		}
-
-		// Save notification
-		connection.DataModel.AddNotification(specificNotifyDatagram, true)
-
-		// Send notification to target vehicle
-		vehicleConnection := connection.DataModel.GetVehicleConnection(notifyDatagram.VehicleId, true)
-		if vehicleConnection != nil {
-			var specificNotifyVehicleDatagram api.IDatagram
-			notifyVehicleDatagram := &api.NotifyVehicleDatagram{
-				BaseDatagram: api.BaseDatagram{Type: "notify_vehicle"},
-				Level:        notifyDatagram.Level,
-				ContentType:  notifyDatagram.ContentType,
-			}
-			switch notifyDatagram.ContentType {
-			case "generic":
-				specificNotifyVehicleDatagram = &api.GenericNotifyVehicleDatagram{
-					NotifyVehicleDatagram: *notifyVehicleDatagram,
-					Content:               specificNotifyDatagram.GetContent().(api.GenericNotificationContent),
-				}
-			case "head_collision":
-				specificNotifyVehicleDatagram = &api.HeadCollisionNotifyVehicleDatagram{
-					NotifyVehicleDatagram: *notifyVehicleDatagram,
-					Content:               specificNotifyDatagram.GetContent().(api.HeadCollisionNotificationContent),
-				}
-			case "chain_collision":
-				specificNotifyVehicleDatagram = &api.ChainCollisionNotifyVehicleDatagram{
-					NotifyVehicleDatagram: *notifyVehicleDatagram,
-					Content:               specificNotifyDatagram.GetContent().(api.ChainCollisionNotificationContent),
-				}
-			case "crossroad":
-				specificNotifyVehicleDatagram = &api.CrossroadNotifyVehicleDatagram{
-					NotifyVehicleDatagram: *notifyVehicleDatagram,
-					Content:               specificNotifyDatagram.GetContent().(api.CrossroadNotificationContent),
-				}
-			}
-
-			vehicleConnection.WriteDatagram(specificNotifyVehicleDatagram, true)
-		}
-	}
 
 	if safe {
 		connection.Lock()
@@ -265,6 +185,7 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	if safe {
 		connection.Unlock()
 	}
+}
 }
 
 func (connection *ProcessorConnection) Subscribe(datagram *api.SubscribeDatagram, safe bool) {
@@ -356,10 +277,9 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		fmt.Print("Parsing JSON failed: ", err)
 		return
 	}
-	// TODO uncomment this
-	//if datagram.Index <= connection.LastReceivedIndex {
-	//	return
-	//}
+	if datagram.Index <= connection.LastReceivedIndex {
+		return
+	}
 
 	switch datagram.Type {
 	case "ping":
@@ -414,10 +334,6 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 			fmt.Printf("Subscribe function call..." + connection.VinNumber + "\n")
 			connection.Subscribe(safe)
 		}
-
-		// connection.DataModel.Lock()
-		// insideArea := connection.DataModel.Area.Contains(&updateVehicleDatagram.Vehicle.Position)
-		// connection.DataModel.Unlock()
 
 		if true {
 			connection.DataModel.UpdateVehicle(connection, &updateVehicleDatagram, true)

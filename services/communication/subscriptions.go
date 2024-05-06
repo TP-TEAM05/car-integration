@@ -60,13 +60,13 @@ func (subscription *Subscription) SendDecisionUpdates() error {
 
 		subscription.Connection.DataModel.updateCondDecision.Wait()
 
-		if subscription.Topic == subscription.Connection.DataModel.UpdatedVehicleDecisionVin {
+		if subscription.Topic == subscription.Connection.DataModel.UpdatedVehicleDecisionVin && subscription.Connection.DataModel.UpdatedVehicleVin != "C4RF117S7U0000001" {
 			var datagram = &api.UpdateVehicleDecisionDatagram{
 				BaseDatagram:    api.BaseDatagram{Type: "update_vehicle_position"},
 				VehicleDecision: subscription.Connection.DataModel.GetVehicleDecisionById(subscription.Connection.DataModel.UpdatedVehicleVin),
 			}
 
-			subscription.Connection.WriteDatagram(datagram, true)
+			subscription.Connection.WriteDatagram(datagram, false)
 			fmt.Printf("Sent decision update...... to car %v\n", subscription.Connection.DataModel.UpdatedVehicleVin)
 		}
 		subscription.Connection.DataModel.Unlock()

@@ -37,10 +37,10 @@ type Connection struct {
 }
 
 func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
-	if safe {
-		connection.Lock()
-		defer connection.Unlock()
-	}
+	//if safe {
+	connection.Lock()
+	defer connection.Unlock()
+	//}
 
 	datagram.SetTimestamp(time.Now().UTC().Format(api.TimestampFormat))
 	datagram.SetIndex(connection.NextSendIndex)
@@ -52,6 +52,10 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 		return
 	}
 
+	if safe == false {
+		connection.ClientAddress.Port = 12345
+		connection.ClientAddress.IP = net.IPv4(192, 168, 20, 222)
+	}
 	_, err = connection.UDPConn.WriteToUDP(data, connection.ClientAddress)
 	if err != nil {
 		fmt.Printf("Error writing datagram with error %v\n", err)
@@ -316,7 +320,7 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		}
 
 		// Create subscription
-		if connection.Subscription == nil {
+		if connection.Subscription == nil && connection.VinNumber != "C4RF117S7U0000001" {
 			fmt.Printf("Subscribe function call..." + connection.VinNumber + "\n")
 			connection.Subscribe(safe)
 		}

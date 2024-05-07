@@ -49,7 +49,6 @@ func NewDataModel(area *models.Area, notificationDuration float32) *DataModel {
 	return dm
 }
 
-
 func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagram *api.UpdateVehicleDatagram, safe bool) {
 	if safe {
 		dataModel.Lock()
@@ -100,14 +99,8 @@ func (dataModel *DataModel) UpdateVehicleDecision(connection *ProcessorConnectio
 
 	vehicleDecision := datagram.VehicleDecision
 
-	savedVehicle, ok := dataModel.VehicleDecisions[vehicleDecision.Vin]
-	if !ok {
-		savedVehicle = &api.UpdateVehicleDecision{
-			Message: vehicleDecision.Message,
-			Vin:     vehicleDecision.Vin,
-		}
-		dataModel.VehicleDecisions[savedVehicle.Vin] = savedVehicle
-	} else {
+	savedVehicle, err := dataModel.VehicleDecisions[vehicleDecision.Vin]
+	if err {
 		newTime, err := time.Parse(api.TimestampFormat, datagram.BaseDatagram.Timestamp)
 		if err != nil {
 			fmt.Printf("Failed to parse %v\n", datagram.BaseDatagram.Timestamp)
@@ -125,6 +118,11 @@ func (dataModel *DataModel) UpdateVehicleDecision(connection *ProcessorConnectio
 			return
 		}
 	}
+	savedVehicle = &api.UpdateVehicleDecision{
+		Message: vehicleDecision.Message,
+		Vin:     vehicleDecision.Vin,
+	}
+	dataModel.VehicleDecisions[savedVehicle.Vin] = savedVehicle
 
 	dataModel.UpdatedVehicleDecisionVin = savedVehicle.Vin
 

@@ -61,7 +61,9 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 		fmt.Printf("Error writing datagram with error %v\n", err)
 		return
 	}
-	// fmt.Printf("Sending message to %v: %s\n", connection.ClientAddress, data[:min(len(data), 128)])
+	if safe == false {
+		fmt.Printf("Sending message to %v: %s\n", connection.ClientAddress, data[:min(len(data), 2048)])
+	}
 }
 
 func (connection *Connection) OnDead(safe bool) {
@@ -178,7 +180,7 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	case "decision_update":
 		var decisionUpdateDatagram api.UpdateVehicleDecisionDatagram
 		_ = json.Unmarshal(data, &decisionUpdateDatagram)
-		fmt.Printf("decision update arrived....\n")
+		//fmt.Printf("decision update arrived....\n")
 
 		connection.DataModel.UpdateVehicleDecision(connection, &decisionUpdateDatagram, true)
 

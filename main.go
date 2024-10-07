@@ -1,19 +1,22 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
 	"car-integration/models"
 	communication "car-integration/services/communication"
 	database "car-integration/services/database"
+	logger "car-integration/services/logger"
 	redis "car-integration/services/redis"
+	"log"
+	"net/http"
+	"time"
 
 	api "github.com/ReCoFIIT/integration-api"
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog"
 )
 
 func main() {
+	defer sentry.Flush(2 * time.Second)
 	zerolog.TimeFieldFormat = api.TimestampFormat
 
 	area := models.Area{
@@ -31,6 +34,7 @@ func main() {
 
 	database.Init()
 	redis.Init()
+	logger.Init()
 
 	// decision module
 	go communication.NewConnectionsManager(dataModel, "processor", 0, nil).

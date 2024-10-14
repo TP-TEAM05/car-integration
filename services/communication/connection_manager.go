@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog"
 )
 
@@ -27,6 +28,7 @@ func NewConnectionsManager(dataModel *DataModel, connectionType string, keepAliv
 	if inputLogFilepath != nil {
 		file, err := os.OpenFile(*inputLogFilepath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0664)
 		if err != nil {
+			sentry.CaptureException(err)
 			panic(err)
 		}
 		loggerInstance := zerolog.New(file).With().Timestamp().Logger()
@@ -48,6 +50,7 @@ func (manager *ConnectionsManager) StartListening(port int, safe bool) {
 	conn, err := net.ListenUDP("udp", &serverAddress)
 
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Printf("Error initializing UDP server: %v\n", err)
 		return
 	}
@@ -69,6 +72,7 @@ func (manager *ConnectionsManager) StartListening(port int, safe bool) {
 		manager.LogInput(string(readBuffer[:readBufferLength]), clientAddress, port, connectionType)
 
 		if err != nil {
+			sentry.CaptureException(err)
 			fmt.Printf("Error reading message  %v\n", err)
 			continue
 		}

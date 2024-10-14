@@ -10,6 +10,7 @@ import (
 	"time"
 
 	api "github.com/ReCoFIIT/integration-api"
+	"github.com/getsentry/sentry-go"
 )
 
 type IConnection interface {
@@ -48,6 +49,7 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 
 	data, err := json.Marshal(datagram)
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Printf("Error marshalling datagram %v with error %v\n", datagram, err)
 		return
 	}
@@ -58,6 +60,7 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 	}
 	_, err = connection.UDPConn.WriteToUDP(data, connection.ClientAddress)
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Printf("Error writing datagram with error %v\n", err)
 		return
 	}
@@ -113,6 +116,7 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	var datagram api.BaseDatagram
 	err := json.Unmarshal(data, &datagram)
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Print("Parsing JSON failed.")
 		return
 	}
@@ -211,6 +215,7 @@ func (connection *ProcessorConnection) Subscribe(datagram *api.SubscribeDatagram
 	go func() {
 		err := subscription.Start()
 		if err != nil {
+			sentry.CaptureException(err)
 			fmt.Printf("Subscription ended due to an error: %v\n", err)
 		}
 	}()
@@ -269,6 +274,7 @@ func (connection *VehicleConnection) Subscribe(safe bool) {
 	go func() {
 		err := subscription.Start()
 		if err != nil {
+			sentry.CaptureException(err)
 			fmt.Printf("Subscription ended due to an error: %v\n", err)
 		}
 	}()
@@ -318,6 +324,7 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		// Save stats to Redis
 		err := redis.SaveNetworkStats(updateVehicleDatagram.Vehicle.Vin, &connection.NetworkStats.Stats)
 		if err != nil {
+			sentry.CaptureException(err)
 			fmt.Println("Failed to save network stats:", err)
 		}
 

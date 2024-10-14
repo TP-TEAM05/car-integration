@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/getsentry/sentry-go"
 	r "github.com/redis/go-redis/v9"
 )
 
@@ -25,6 +26,7 @@ func HealthCheck() bool {
 	ctx := context.Background()
 	pong, err := DB.Ping(ctx).Result()
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Println("Redis health check failed")
 		return false
 	}

@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	statistics "car-integration/services/statistics"
+
+	"github.com/getsentry/sentry-go"
 )
 
 func GetNetworkStats(key string) *statistics.NetworkStats {
@@ -15,6 +17,7 @@ func GetNetworkStats(key string) *statistics.NetworkStats {
 	// Get the serialized data from Redis
 	serialized, err := db.Get(ctx, key).Result()
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Println("Error getting NetworkStats from Redis:", err)
 		return nil
 	}
@@ -23,6 +26,7 @@ func GetNetworkStats(key string) *statistics.NetworkStats {
 	stats := &statistics.NetworkStats{}
 	err = json.Unmarshal([]byte(serialized), stats)
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Println("Error deserializing NetworkStats:", err)
 		return nil
 	}
@@ -37,6 +41,7 @@ func SaveNetworkStats(key string, stats *statistics.NetworkStats) error {
 	// Serialize the stats to JSON for storing
 	serialized, err := json.Marshal(stats)
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Println("Error serializing NetworkStats:", err)
 		return err
 	}
@@ -44,6 +49,7 @@ func SaveNetworkStats(key string, stats *statistics.NetworkStats) error {
 	// Save the serialized data to Redis
 	err = db.Set(ctx, key, serialized, 0).Err()
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Println("Error saving NetworkStats to Redis:", err)
 		return err
 	}

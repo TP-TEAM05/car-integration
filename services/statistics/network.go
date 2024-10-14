@@ -5,6 +5,7 @@ import (
 	"time"
 
 	api "github.com/ReCoFIIT/integration-api"
+	"github.com/getsentry/sentry-go"
 )
 
 type NetworkStats struct {
@@ -53,6 +54,7 @@ func (ns *NetworkStatistics) Update(datagram api.UpdateVehicleDatagram, received
 
 	sentTime, err := time.Parse(time.RFC3339, datagram.Timestamp)
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Println("Error parsing timestamp:", err)
 		return
 	}

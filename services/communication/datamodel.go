@@ -8,6 +8,7 @@ import (
 	"time"
 
 	api "github.com/ReCoFIIT/integration-api"
+	"github.com/getsentry/sentry-go"
 )
 
 // For now
@@ -15,6 +16,7 @@ import (
 func ParseTime(timestamp string) time.Time {
 	t, err := time.Parse(api.TimestampFormat, timestamp)
 	if err != nil {
+		sentry.CaptureException(err)
 		fmt.Printf("Failed to parse timestamp %v\n", timestamp)
 	}
 	return t
@@ -68,12 +70,14 @@ func (dataModel *DataModel) UpdateVehicle(connection *VehicleConnection, datagra
 	} else {
 		newTime, err := time.Parse(api.TimestampFormat, datagram.Timestamp)
 		if err != nil {
+			sentry.CaptureException(err)
 			fmt.Printf("Failed to parse %v\n", datagram.Timestamp)
 			return
 		}
 
 		lastTime, err := time.Parse(api.TimestampFormat, savedVehicle.Timestamp)
 		if err != nil {
+			sentry.CaptureException(err)
 			fmt.Printf("Failed to parse %v\n", savedVehicle.Timestamp)
 			return
 		}
@@ -103,12 +107,14 @@ func (dataModel *DataModel) UpdateVehicleDecision(connection *ProcessorConnectio
 	if err {
 		newTime, err := time.Parse(api.TimestampFormat, datagram.BaseDatagram.Timestamp)
 		if err != nil {
+			sentry.CaptureException(err)
 			fmt.Printf("Failed to parse %v\n", datagram.BaseDatagram.Timestamp)
 			return
 		}
 
 		lastTime, err := time.Parse(api.TimestampFormat, datagram.BaseDatagram.Timestamp)
 		if err != nil {
+			sentry.CaptureException(err)
 			fmt.Printf("Failed to parse %v\n", datagram.BaseDatagram.Timestamp)
 			return
 		}

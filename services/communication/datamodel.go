@@ -11,8 +11,6 @@ import (
 	"github.com/getsentry/sentry-go"
 )
 
-// For now
-
 func ParseTime(timestamp string) time.Time {
 	t, err := time.Parse(api.TimestampFormat, timestamp)
 	if err != nil {
@@ -28,7 +26,7 @@ type DataModel struct {
 	Vehicles               map[string]*Vehicle
 	VehicleDecisions       map[string]*api.UpdateVehicleDecision
 	NextVehicleId          int
-	VehicleConnectionsById map[int]*VehicleConnection // Maps vehicleId to its connection
+	VehicleConnectionsById map[int]*VehicleConnection
 	Notifications          map[int]map[string]*Notification
 	NotificationDuration   float32
 	NextNotificationId     int
@@ -131,7 +129,6 @@ func (dataModel *DataModel) UpdateVehicleDecision(connection *ProcessorConnectio
 	dataModel.VehicleDecisions[savedVehicle.Vin] = savedVehicle
 
 	dataModel.UpdatedVehicleDecisionVin = savedVehicle.Vin
-
 	dataModel.updateCondDecision.Broadcast()
 }
 
@@ -218,46 +215,3 @@ type Notification struct {
 	Datagram *api.UpdateNotificationsNotification
 }
 
-// Returns true if other Notification should replace this notification in the means of importance. Note this can only
-// be called on notifications of same contentType
-func (notification *Notification) ReplaceableBy(other *Notification) (bool, error) {
-	if notification.Datagram.ContentType != other.Datagram.ContentType {
-		return false, fmt.Errorf("other and notification ContentType mismatch")
-	}
-
-	// Other is older don't replace
-	existingTime := ParseTime(notification.Datagram.Timestamp)
-	otherTime := ParseTime(other.Datagram.Timestamp)
-	if existingTime.After(otherTime) {
-		return false, nil
-	}
-
-	// Check whether other has higher importance level
-	notificationLevelValues := map[string]int{
-		"info":    0,
-		"warning": 1,
-		"danger":  2,
-	}
-	otherHasHigherLevel := notificationLevelValues[other.Datagram.Level] >= notificationLevelValues[notification.Datagram.Level]
-	if otherHasHigherLevel {
-		return true, nil
-	}
-
-	// We can discard outdated notification with higher level if the targetVehicleIsTheSame
-	switch notification.Datagram.ContentType {
-	case "head_collision":
-		targetVehicleId := notification.Datagram.Content.(api.HeadCollisionNotificationContent).TargetVehicleId
-		otherTargetVehicleId := other.Datagram.Content.(api.HeadCollisionNotificationContent).TargetVehicleId
-		if targetVehicleId == otherTargetVehicleId {
-			return true, nil
-		}
-	case "chain_collision":
-		targetVehicleId := notification.Datagram.Content.(api.ChainCollisionNotificationContent).TargetVehicleId
-		otherTargetVehicleId := other.Datagram.Content.(api.ChainCollisionNotificationContent).TargetVehicleId
-		if targetVehicleId == otherTargetVehicleId {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}

@@ -44,9 +44,9 @@ func NewConnectionsManager(dataModel *DataModel, connectionType string, keepAliv
 	}
 }
 
-func (manager *ConnectionsManager) StartListening(port int, safe bool) {
+func (manager *ConnectionsManager) StartListening(port int, safe bool, ip string) {
 	readBuffer := make([]byte, 65536)
-	serverAddress := net.UDPAddr{Port: port, IP: net.ParseIP("0.0.0.0")}
+	serverAddress := net.UDPAddr{Port: port, IP: net.ParseIP(ip)}
 	conn, err := net.ListenUDP("udp", &serverAddress)
 
 	if err != nil {
@@ -60,7 +60,6 @@ func (manager *ConnectionsManager) StartListening(port int, safe bool) {
 	// Datagram reading loop
 	for {
 		readBufferLength, clientAddress, err := conn.ReadFromUDP(readBuffer)
-
 		if safe {
 			manager.Lock()
 		}

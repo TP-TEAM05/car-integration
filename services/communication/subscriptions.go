@@ -66,8 +66,11 @@ func (subscription *Subscription) SendDecisionUpdates() error {
 				VehicleDecision: subscription.Connection.DataModel.GetVehicleDecisionById(subscription.Connection.DataModel.UpdatedVehicleVin),
 			}
 
+			// TODO: DEBUG: Here are the data before sending
+
+			// If the WriteDatagram has safe set to false, it will use hardcoded value located in the function `connection.go`
 			subscription.Connection.WriteDatagram(datagram, false)
-			fmt.Printf("Sent decision update...... to car %v\n", subscription.Connection.DataModel.UpdatedVehicleVin)
+			// fmt.Printf("Sent decision update...... to car %v\n", subscription.Connection.DataModel.UpdatedVehicleVin)
 		}
 		subscription.Connection.DataModel.Unlock()
 

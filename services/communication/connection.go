@@ -56,7 +56,7 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 
 	if safe == false {
 		connection.ClientAddress.Port = 12345
-		connection.ClientAddress.IP = net.IPv4(192, 168, 20, 222)
+		connection.ClientAddress.IP = net.IPv4(192, 168, 20, 38)
 	}
 	_, err = connection.UDPConn.WriteToUDP(data, connection.ClientAddress)
 	if err != nil {
@@ -120,12 +120,13 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 		fmt.Print("Parsing JSON failed.")
 		return
 	}
-	// TODO uncomment this
-	//if datagram.Index <= connection.LastReceivedIndex {
-	//	return
-	//}
+
+	if datagram.Index <= connection.LastReceivedIndex {
+		return
+	}
 
 	switch datagram.Type {
+	// Used for KeepAlive
 	case "connect":
 		var connectDatagram api.ConnectDatagram
 		_ = json.Unmarshal(data, &connectDatagram)
@@ -135,6 +136,7 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 		}
 		connection.WriteDatagram(response, safe)
 
+		// Used for subscriptions
 	case "subscribe":
 		var subscribeDatagram api.SubscribeDatagram
 		_ = json.Unmarshal(data, &subscribeDatagram)
@@ -142,7 +144,7 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 		// Create subscription
 		connection.Subscribe(&subscribeDatagram, safe)
 
-		// Send acknowledgement
+		// Send acknowledgement that subscription was received
 		response := &api.AcknowledgeDatagram{
 			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: subscribeDatagram.Index,
@@ -184,7 +186,6 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	case "decision_update":
 		var decisionUpdateDatagram api.UpdateVehicleDecisionDatagram
 		_ = json.Unmarshal(data, &decisionUpdateDatagram)
-		//fmt.Printf("decision update arrived....\n")
 
 		connection.DataModel.UpdateVehicleDecision(connection, &decisionUpdateDatagram, true)
 
@@ -333,6 +334,8 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 			fmt.Printf("Subscribe function call..." + connection.VinNumber + "\n")
 			connection.Subscribe(safe)
 		}
+		// TODO: Debug here if needed
+		// fmt.Printf("Received vehicle data: %v\n", updateVehicleDatagram.Vehicle)
 
 		if true {
 			connection.DataModel.UpdateVehicle(connection, &updateVehicleDatagram, true)

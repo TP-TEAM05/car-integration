@@ -3,7 +3,6 @@ package main
 import (
 	"car-integration/models"
 	communication "car-integration/services/communication"
-	database "car-integration/services/database"
 	logger "car-integration/services/logger"
 	redis "car-integration/services/redis"
 	"log"
@@ -32,7 +31,6 @@ func main() {
 
 	var dataModel = communication.NewDataModel(&area, 0)
 
-	database.Init()
 	redis.Init()
 	logger.Init()
 

@@ -54,9 +54,11 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 		return
 	}
 
+	// Send decision update to the vehicle
 	if safe == false {
 		connection.ClientAddress.Port = 12345
-		connection.ClientAddress.IP = net.IPv4(192, 168, 20, 38)
+		//TODO: Override the IP address to test the connection
+		// connection.ClientAddress.IP = net.IPv4(192, 168, 20, 38)
 	}
 	_, err = connection.UDPConn.WriteToUDP(data, connection.ClientAddress)
 	if err != nil {

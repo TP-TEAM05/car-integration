@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	api "github.com/ReCoFIIT/integration-api"
+	api "github.com/TP-TEAM05/integration-api"
 )
 
 type Subscription struct {

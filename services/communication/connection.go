@@ -124,6 +124,9 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	}
 
 	if datagram.Index <= connection.LastReceivedIndex {
+		// DEBUG: Log dropped datagrams
+		fmt.Printf("[CAR-INTEGRATION-DROP] Dropped %s datagram from %v (index: %d, lastReceived: %d)\n",
+			datagram.Type, connection.ClientAddress, datagram.Index, connection.LastReceivedIndex)
 		return
 	}
 
@@ -132,11 +135,15 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	case "connect":
 		var connectDatagram api.ConnectDatagram
 		_ = json.Unmarshal(data, &connectDatagram)
+		fmt.Printf("[CAR-INTEGRATION-RX] Received connect from %v (index: %d)\n",
+			connection.ClientAddress, connectDatagram.Index)
 		response := &api.AcknowledgeDatagram{
 			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: connectDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
+		fmt.Printf("[CAR-INTEGRATION-TX] Sent ACK to %v (acking index: %d)\n",
+			connection.ClientAddress, connectDatagram.Index)
 
 		// Used for subscriptions
 	case "subscribe":
@@ -170,11 +177,15 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	case "keepalive":
 		var keepAliveDatagram api.KeepAliveDatagram
 		_ = json.Unmarshal(data, &keepAliveDatagram)
+		fmt.Printf("[CAR-INTEGRATION-RX] Received keepalive from %v (index: %d)\n",
+			connection.ClientAddress, keepAliveDatagram.Index)
 		response := &api.AcknowledgeDatagram{
 			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: keepAliveDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
+		fmt.Printf("[CAR-INTEGRATION-TX] Sent ACK to %v (acking index: %d)\n",
+			connection.ClientAddress, keepAliveDatagram.Index)
 
 	case "ping":
 		var pingDatagram api.KeepAliveDatagram
@@ -311,6 +322,31 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 		// DEBUG: Here are the data received from vehicle
 
 		_ = json.Unmarshal(data, &updateVehicleDatagram)
+
+		// DEBUG: Log vehicle connection details
+		fmt.Printf("[DEBUG] Received update_vehicle from %v with VIN: %s\n",
+			connection.ClientAddress, updateVehicleDatagram.Vehicle.Vin)
+
+		// Map VIN to Docker service name and resolve IP
+		var serviceName string
+		if updateVehicleDatagram.Vehicle.Vin == "C4RF117S7U0000001" {
+			serviceName = "som"
+		} else if updateVehicleDatagram.Vehicle.Vin == "C4RF117S7U0000002" {
+			serviceName = "sam"
+		}
+
+		if serviceName != "" {
+			// Resolve the Docker service name to IP
+			addrs, err := net.LookupIP(serviceName)
+			if err == nil && len(addrs) > 0 {
+				// Update the client address with the resolved IP
+				connection.ClientAddress.IP = addrs[0]
+				connection.ClientAddress.Port = 12345  // Default UDP server port
+				fmt.Printf("[DEBUG] Resolved %s to IP: %v\n", serviceName, addrs[0])
+			} else {
+				fmt.Printf("[DEBUG] Failed to resolve %s: %v\n", serviceName, err)
+			}
+		}
 
 		// Continue with the rest of the parsing
 

@@ -46,7 +46,10 @@ func (subscription *Subscription) SendLiveUpdates() error {
 			BaseDatagram: api.BaseDatagram{Type: "update_vehicle_position"},
 			Vehicle:      subscription.Connection.DataModel.GetVehicleById(subscription.Connection.DataModel.UpdatedVehicleVin),
 		}
-		// DEBUG: Here are the data before sending
+
+		// DEBUG: Log packet being sent to backend
+		fmt.Printf("[BACKEND-TX] Sending update_vehicle_position to %v for VIN: %s\n",
+			subscription.Connection.ClientAddress, datagram.Vehicle.Vin)
 
 		subscription.Connection.WriteDatagram(datagram, true)
 		subscription.Connection.DataModel.Unlock()
@@ -67,10 +70,15 @@ func (subscription *Subscription) SendDecisionUpdates() error {
 			}
 
 			// TODO: DEBUG: Here are the data before sending
+			fmt.Printf("[DEBUG] Sending decision to VIN %s, connection address BEFORE override: %v\n",
+				subscription.Topic, subscription.Connection.ClientAddress)
 
 			// If the WriteDatagram has safe set to false, it will use hardcoded value located in the function `connection.go`
 			subscription.Connection.WriteDatagram(datagram, false)
-			// fmt.Printf("Sent decision update...... to car %v\n", subscription.Connection.DataModel.UpdatedVehicleVin)
+
+			// // Restore original port
+			// subscription.Connection.ClientAddress.Port = originalPort
+			// // fmt.Printf("Sent decision update...... to car %v\n", subscription.Connection.DataModel.UpdatedVehicleVin)
 		}
 		subscription.Connection.DataModel.Unlock()
 

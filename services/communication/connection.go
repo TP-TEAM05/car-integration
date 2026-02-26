@@ -16,7 +16,7 @@ import (
 type IConnection interface {
 	WriteDatagram(datagram api.IDatagram, safe bool)
 	ProcessDatagram(data []byte, safe bool)
-	OnDead(safe bool) // Called when the KeepAliveTimeout is reached before deletion of this connection.
+	OnDead(safe bool)
 	GetKeepAliveTimeout(safe bool) float32
 	GetClientAddress(safe bool) *net.UDPAddr
 
@@ -33,15 +33,13 @@ type Connection struct {
 	NextSendIndex     int
 	LastReceivedIndex int
 	DataModel         *DataModel
-	KeepAliveTimeout  float32 // Seconds, after which is the connection discarded if no datagram arrived. 0 for no timeout
+	KeepAliveTimeout  float32
 	KeepAliveTimer    *time.Timer
 }
 
 func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
-	//if safe {
 	connection.Lock()
 	defer connection.Unlock()
-	//}
 
 	datagram.SetTimestamp(time.Now().UTC().Format(api.TimestampFormat))
 	datagram.SetIndex(connection.NextSendIndex)
@@ -54,20 +52,20 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 		return
 	}
 
-	// Send decision update to the vehicle
+	// Pri odosielaní rozhodnutí (safe=false) použijeme port 12345
+	// IP adresa zostáva tá, z ktorej prišiel UDP paket od ROS2 nodu — Možnosť B
 	if safe == false {
 		connection.ClientAddress.Port = 12345
-		//TODO: Override the IP address to test the connection
-		// connection.ClientAddress.IP = net.IPv4(192, 168, 20, 38)
+		// IP sa NEMENÍ — použijeme zdrojovú IP z prijatého UDP paketu
 	}
+
+	fmt.Printf("[TX] Sending to %v: %s\n", connection.ClientAddress, data[:min(len(data), 256)])
+
 	_, err = connection.UDPConn.WriteToUDP(data, connection.ClientAddress)
 	if err != nil {
 		sentry.CaptureException(err)
-		fmt.Printf("Error writing datagram with error %v\n", err)
+		fmt.Printf("Error writing datagram to %v: %v\n", connection.ClientAddress, err)
 		return
-	}
-	if safe == false {
-		fmt.Printf("Sending message to %v: %s\n", connection.ClientAddress, data[:min(len(data), 2048)])
 	}
 }
 
@@ -110,11 +108,10 @@ func (connection *Connection) SetKeepAliveTimer(timer *time.Timer, safe bool) {
 
 type ProcessorConnection struct {
 	Connection
-	Subscriptions map[string]*Subscription // Mapping content to subscription (only one subscription to each type can exist)
+	Subscriptions map[string]*Subscription
 }
 
 func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
-	// Parse data to JSON
 	var datagram api.BaseDatagram
 	err := json.Unmarshal(data, &datagram)
 	if err != nil {
@@ -124,14 +121,12 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	}
 
 	if datagram.Index <= connection.LastReceivedIndex {
-		// DEBUG: Log dropped datagrams
 		fmt.Printf("[CAR-INTEGRATION-DROP] Dropped %s datagram from %v (index: %d, lastReceived: %d)\n",
 			datagram.Type, connection.ClientAddress, datagram.Index, connection.LastReceivedIndex)
 		return
 	}
 
 	switch datagram.Type {
-	// Used for KeepAlive
 	case "connect":
 		var connectDatagram api.ConnectDatagram
 		_ = json.Unmarshal(data, &connectDatagram)
@@ -142,18 +137,11 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 			AcknowledgingIndex: connectDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
-		fmt.Printf("[CAR-INTEGRATION-TX] Sent ACK to %v (acking index: %d)\n",
-			connection.ClientAddress, connectDatagram.Index)
 
-		// Used for subscriptions
 	case "subscribe":
 		var subscribeDatagram api.SubscribeDatagram
 		_ = json.Unmarshal(data, &subscribeDatagram)
-
-		// Create subscription
 		connection.Subscribe(&subscribeDatagram, safe)
-
-		// Send acknowledgement that subscription was received
 		response := &api.AcknowledgeDatagram{
 			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: subscribeDatagram.Index,
@@ -163,11 +151,7 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	case "unsubscribe":
 		var unsubscribeDatagram api.UnsubscribeDatagram
 		_ = json.Unmarshal(data, &unsubscribeDatagram)
-
-		// Delete subscription
 		connection.Unsubscribe(unsubscribeDatagram.Content, safe)
-
-		// Send acknowledgement
 		response := &api.AcknowledgeDatagram{
 			BaseDatagram:       api.BaseDatagram{Type: "acknowledge"},
 			AcknowledgingIndex: unsubscribeDatagram.Index,
@@ -184,8 +168,6 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 			AcknowledgingIndex: keepAliveDatagram.Index,
 		}
 		connection.WriteDatagram(response, safe)
-		fmt.Printf("[CAR-INTEGRATION-TX] Sent ACK to %v (acking index: %d)\n",
-			connection.ClientAddress, keepAliveDatagram.Index)
 
 	case "ping":
 		var pingDatagram api.KeepAliveDatagram
@@ -199,7 +181,6 @@ func (connection *ProcessorConnection) ProcessDatagram(data []byte, safe bool) {
 	case "decision_update":
 		var decisionUpdateDatagram api.UpdateVehicleDecisionDatagram
 		_ = json.Unmarshal(data, &decisionUpdateDatagram)
-
 		connection.DataModel.UpdateVehicleDecision(connection, &decisionUpdateDatagram, true)
 
 		if safe {
@@ -217,7 +198,7 @@ func (connection *ProcessorConnection) Subscribe(datagram *api.SubscribeDatagram
 		connection.Lock()
 		defer connection.Unlock()
 	}
-	connection.Unsubscribe(datagram.Content, false) // Delete existing subscription if any
+	connection.Unsubscribe(datagram.Content, false)
 	subscription := &Subscription{
 		&connection.Connection,
 		datagram.Content,
@@ -242,7 +223,7 @@ func (connection *ProcessorConnection) Unsubscribe(content string, safe bool) {
 	}
 	subscription, ok := connection.Subscriptions[content]
 	if ok {
-		go func() { subscription.Stop() }() // We have to call this in own coroutine because it may block, and would hold the connection lock
+		go func() { subscription.Stop() }()
 		delete(connection.Subscriptions, content)
 	}
 }
@@ -266,6 +247,7 @@ func (connection *ProcessorConnection) OnDead(safe bool) {
 type VehicleConnection struct {
 	Connection
 	VinNumber    string
+	ReplyIP      net.IP   // ← IP z ktorej prišiel prvý UDP paket — Možnosť B
 	Subscription *Subscription
 	NetworkStats *statistics.NetworkStatistics
 }
@@ -282,9 +264,7 @@ func (connection *VehicleConnection) Subscribe(safe bool) {
 		1,
 		make(chan bool),
 	}
-
 	connection.Subscription = subscription
-
 	go func() {
 		err := subscription.Start()
 		if err != nil {
@@ -295,17 +275,12 @@ func (connection *VehicleConnection) Subscribe(safe bool) {
 }
 
 func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
-
-	// Parse data to JSON
 	var datagram api.BaseDatagram
 	err := json.Unmarshal(data, &datagram)
 	if err != nil {
 		fmt.Print("Parsing JSON failed: ", err)
 		return
 	}
-	//if datagram.Index <= connection.LastReceivedIndex {
-	//	return
-	//}
 
 	switch datagram.Type {
 	case "ping":
@@ -319,38 +294,22 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 
 	case "update_vehicle":
 		var updateVehicleDatagram api.UpdateVehicleDatagram
-		// DEBUG: Here are the data received from vehicle
-
 		_ = json.Unmarshal(data, &updateVehicleDatagram)
 
-		// DEBUG: Log vehicle connection details
-		fmt.Printf("[DEBUG] Received update_vehicle from %v with VIN: %s\n",
+		fmt.Printf("[RX] update_vehicle from %v | VIN: %s\n",
 			connection.ClientAddress, updateVehicleDatagram.Vehicle.Vin)
 
-		// Map VIN to Docker service name and resolve IP
-		var serviceName string
-		if updateVehicleDatagram.Vehicle.Vin == "C4RF117S7U0000001" {
-			serviceName = "som"
-		} else if updateVehicleDatagram.Vehicle.Vin == "C4RF117S7U0000002" {
-			serviceName = "sam"
+		// MOŽNOSŤ B: Zapamätaj si zdrojovú IP z prvého paketu — tá je správna
+		// DNS lookup na sam/som sme odstránili — funguje aj mimo Docker siete
+		if connection.ReplyIP == nil {
+			connection.ReplyIP = connection.ClientAddress.IP
+			fmt.Printf("[IP] Zaregistrovaná reply IP pre VIN %s: %v\n",
+				updateVehicleDatagram.Vehicle.Vin, connection.ReplyIP)
 		}
+		// Nastav ClientAddress.IP na zapamätanú reply IP (pre prípad že sa zmenila)
+		connection.ClientAddress.IP = connection.ReplyIP
 
-		if serviceName != "" {
-			// Resolve the Docker service name to IP
-			addrs, err := net.LookupIP(serviceName)
-			if err == nil && len(addrs) > 0 {
-				// Update the client address with the resolved IP
-				connection.ClientAddress.IP = addrs[0]
-				connection.ClientAddress.Port = 12345  // Default UDP server port
-				fmt.Printf("[DEBUG] Resolved %s to IP: %v\n", serviceName, addrs[0])
-			} else {
-				fmt.Printf("[DEBUG] Failed to resolve %s: %v\n", serviceName, err)
-			}
-		}
-
-		// Continue with the rest of the parsing
-
-		// Update vehicle data in connection
+		// Nastav VIN
 		if safe {
 			connection.Lock()
 		}
@@ -359,34 +318,23 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 			connection.Unlock()
 		}
 
+		// Sieťová štatistika
 		connection.NetworkStats.Update(updateVehicleDatagram, time.Now().UTC())
-		// Save stats to Redis
 		err := redis.SaveNetworkStats(updateVehicleDatagram.Vehicle.Vin, &connection.NetworkStats.Stats)
 		if err != nil {
 			sentry.CaptureException(err)
 			fmt.Println("Failed to save network stats:", err)
 		}
 
-		// Create subscription
-		if connection.Subscription == nil && connection.VinNumber != "C4RF117S7U0000001" {
-			fmt.Printf("Subscribe function call..." + connection.VinNumber + "\n")
+		// Vytvor subscription pre follower (nie pre leadera)
+		if connection.Subscription == nil &&
+			connection.VinNumber != "" &&
+			connection.VinNumber != "C4RF117S7U0000001" {
+			fmt.Printf("[SUB] Subscribing follower VIN: %s\n", connection.VinNumber)
 			connection.Subscribe(safe)
 		}
-		// TODO: Debug here if needed
-		// fmt.Printf("Received vehicle data: %v\n", updateVehicleDatagram.Vehicle)
 
-		if true {
-			connection.DataModel.UpdateVehicle(connection, &updateVehicleDatagram, true)
-		} else {
-			// Disconnect vehicle which is outside the managed area
-			connection.DataModel.DeleteVehicle(updateVehicleDatagram.Vehicle.Vin, true)
-			response := &api.DisconnectVehicleDatagram{
-				BaseDatagram: api.BaseDatagram{Type: "disconnect_vehicle"},
-				ConnectTo:    "NOT IMPLEMENTED", // Should contain connection string to the following Integration Module, out of scope for now
-
-			}
-			connection.WriteDatagram(response, safe)
-		}
+		connection.DataModel.UpdateVehicle(connection, &updateVehicleDatagram, true)
 	}
 
 	if safe {
@@ -400,4 +348,11 @@ func (connection *VehicleConnection) ProcessDatagram(data []byte, safe bool) {
 
 func (connection *VehicleConnection) OnDead(safe bool) {
 	connection.DataModel.DeleteVehicle(connection.VinNumber, true)
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

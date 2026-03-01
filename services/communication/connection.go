@@ -59,7 +59,7 @@ func (connection *Connection) WriteDatagram(datagram api.IDatagram, safe bool) {
 		// IP sa NEMENÍ — použijeme zdrojovú IP z prijatého UDP paketu
 	}
 
-	fmt.Printf("[TX] Sending to %v: %s\n", connection.ClientAddress, data[:min(len(data), 256)])
+	// fmt.Printf("[TX] Sending to %v: %s\n", connection.ClientAddress, data[:min(len(data), 256)])
 
 	_, err = connection.UDPConn.WriteToUDP(data, connection.ClientAddress)
 	if err != nil {
